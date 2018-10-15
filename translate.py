@@ -7,6 +7,7 @@ import argparse
 import math
 import numpy
 import sys
+from TelegramSendMyselfMessages import TelegramSendMyselfMessages
 
 parser = argparse.ArgumentParser(description='translate.py')
 onmt.Markdown.add_md_help_argument(parser)
@@ -231,5 +232,11 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+        telegramMessenger.sendMessageToMe('Error in Evaluation occured.  Message: ' + str(e))
+
+
 
