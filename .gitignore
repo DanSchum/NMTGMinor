@@ -1,4 +1,4 @@
 *.pyc
 .idea/
 python_command_example.txt
-TelegramSendMyselfMessages/TelegramSendMyselfMessages.py
+TelegramSendMyselfMessages
