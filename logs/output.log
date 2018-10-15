@@ -1,0 +1,23 @@
+Namespace(activation_layer='linear_relu_linear', amsgrad=False, attention_out='default', attn_dropout=0.1, batch_size_multiplier=1, batch_size_sents=128, batch_size_update=2048, batch_size_words=2048, beta1=0.9, beta2=0.98, brnn_merge='concat', checkpointing=0, curriculum=-1, data='/project/iwslt2014c/MT/user/dschumacher/Masterarbeit_Misc/MiscProjectPycharm/preprocessing_output/prepared_input_data', data_format='bin', death_rate=0.5, death_type='linear_decay', dropout=0.3, emb_dropout=0.1, encoder_type='text', epochs=13, extra_shuffle=False, fp16=False, fp16_loss_scale=8, gpus=[], init_embedding='normal', inner_size=2048, input_feed=1, join_embedding=False, label_smoothing=0.0, layer_norm='fast', layers=2, learning_rate=1.0, learning_rate_decay=1, load_from='', log_interval=100, max_generator_batches=32, max_grad_norm=0, max_position_length=1024, model='transformer', model_size=512, n_heads=8, noam_step_interval=1, normalize_gradient=False, optim='adam', pad_count=False, param_init=0.1, pre_word_vecs_dec=None, pre_word_vecs_enc=None, reset_optim=False, residual_type='regular', rnn_size=512, save_every=-1, save_model='model', scheduled_sampling_rate=0.0, seed=9999, sort_by_target=False, start_decay_at=99999, start_epoch=1, tie_weights=False, time='positional_encoding', update_method='regular', version=1.0, virtual_gpu=1, warmup_steps=4096, weight_decay=0.0, weight_norm=False, word_dropout=0.0, word_vec_size=512)
+Loading data from '/project/iwslt2014c/MT/user/dschumacher/Masterarbeit_Misc/MiscProjectPycharm/preprocessing_output/prepared_input_data'
+ * vocabulary size. source = 50000; target = 16599
+ * number of training sentences. 1205
+ * maximum batch size (words per batch). 2048
+Building model...
+* number of parameters: 57316567
+Initializing model parameters
+Validation perplexity: 16193.5
+
+Epoch  1,     1/ 1056; ; ppl: 16615.48 ; lr: 1.0000000 ; num updates:       0   528 src tok/s;    64 tgt tok/s; 0:00:03 elapsed
+Epoch  1,   100/ 1056; ; ppl: 20734214415728949302706755807788874878651521944048227073553916155237834001500929250497707025344340936018363519434901339277351302887199254098130371608576.00 ; lr: 1.0000000 ; num updates:       2   264 src tok/s;     6 tgt tok/s; 0:14:37 elapsed
+Epoch  1,   200/ 1056; ; ppl: 602234068631284229700703987051425085102318363180070407073435734809862887103356196686327691856187612241273383581086738461621032358658928785528003416098961484140184978762167509180647679871763036226512136304192604651337577438274319076213552255442866000835183202525360547408740614144.00 ; lr: 1.0000000 ; num updates:       5   342 src tok/s;     8 tgt tok/s; 0:26:09 elapsed
+Traceback (most recent call last):
+  File "train.py", line 138, in <module>
+    main()
+  File "train.py", line 135, in main
+    trainer.run(save_file=opt.load_from)
+  File "/project/iwslt2014c/MT/user/dschumacher/NMTGMinor/onmt/train_utils/trainer.py", line 337, in run
+    iteration=iteration)
+  File "/project/iwslt2014c/MT/user/dschumacher/NMTGMinor/onmt/train_utils/trainer.py", line 270, in train_epoch
+    math.exp(report_loss / report_tgt_words),
+OverflowError: math range error
