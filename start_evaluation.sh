@@ -18,6 +18,6 @@ fi
 
 #Parameter of script is model
 /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6/bin/python3.6 translate.py \
--model $1
--src /home/dschumacher/dschumacher_working_dir/evaluation/evaluation_data/validationSplitSource.txt
+-model $1 \
+-src /home/dschumacher/dschumacher_working_dir/evaluation/evaluation_data/validationSplitSource.txt \
 -output $outputDirectory
