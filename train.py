@@ -16,7 +16,7 @@ from onmt.train_utils.fp16_trainer import FP16XETrainer
 from onmt.train_utils.multiGPUtrainer import MultiGPUXETrainer
 from onmt.modules.Loss import NMTLossFunc
 from onmt.ModelConstructor import build_model, init_model_parameters
-
+from TelegramSendMyselfMessages import TelegramSendMyselfMessages
 
 parser = argparse.ArgumentParser(description='train.py')
 onmt.Markdown.add_md_help_argument(parser)
@@ -135,8 +135,11 @@ def main():
         else:
             trainer = XETrainer(model, loss_function, trainData, validData, dicts, opt)
 
-    
-    trainer.run(save_file=opt.load_from)
+    try:
+        trainer.run(save_file=opt.load_from)
+    except Exception as e:
+        telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+        telegramMessenger.sendMessageToMe('Error in Training occured.  Message: ' + str(e))
 
 if __name__ == "__main__":
     main()
