@@ -10,11 +10,13 @@ from torch import cuda
 from torch.autograd import Variable
 import math
 import time, datetime
+import sys
 from onmt.train_utils.trainer import XETrainer
 from onmt.train_utils.fp16_trainer import FP16XETrainer
 from onmt.train_utils.multiGPUtrainer import MultiGPUXETrainer
 from onmt.modules.Loss import NMTLossFunc
 from onmt.ModelConstructor import build_model, init_model_parameters
+
 
 parser = argparse.ArgumentParser(description='train.py')
 onmt.Markdown.add_md_help_argument(parser)
@@ -52,6 +54,7 @@ def main():
     
     start = time.time()
     print("Loading data from '%s'" % opt.data)
+    sys.stdout.flush()
     
     if opt.data_format == 'raw':
         dataset = torch.load(opt.data)
@@ -105,6 +108,7 @@ def main():
         print(' * number of training sentences. %d' %
               len(train_src))
         print(' * maximum batch size (words per batch). %d' % opt.batch_size_words)
+        sys.stdout.flush()
     
     else:
         raise NotImplementedError
