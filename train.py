@@ -140,6 +140,7 @@ def main():
     except Exception as e:
         telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
         telegramMessenger.sendMessageToMe('Error in Training occured.  Message: ' + str(e))
+        raise e
 
 if __name__ == "__main__":
     main()

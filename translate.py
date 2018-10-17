@@ -237,6 +237,7 @@ if __name__ == "__main__":
     except Exception as e:
         telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
         telegramMessenger.sendMessageToMe('Error in Evaluation occured.  Message: ' + str(e))
+        raise e
 
 
 
