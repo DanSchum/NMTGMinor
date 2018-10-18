@@ -138,12 +138,17 @@ def main():
     try:
         trainer.run(save_file=opt.load_from)
     except Exception as e:
-        telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
-        telegramMessenger.sendMessageToMe('Error in Training occured.  Message: ' + str(e))
+        try:
+            telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+            telegramMessenger.sendMessageToMe('Error in Training occured.  Message: ' + str(e))
+        except Exception as e:
+            print(e)
         raise e
 
 if __name__ == "__main__":
     main()
-
-    telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
-    telegramMessenger.sendMessageToMe('Training finished')
+    try:
+        telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+        telegramMessenger.sendMessageToMe('Training finished')
+    except Exception as e:
+        print(e)
