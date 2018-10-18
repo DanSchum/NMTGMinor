@@ -144,3 +144,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+    telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+    telegramMessenger.sendMessageToMe('Training finished')

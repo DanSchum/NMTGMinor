@@ -232,12 +232,18 @@ def main():
 
 
 if __name__ == "__main__":
+
+    telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
     try:
         main()
     except Exception as e:
-        telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
         telegramMessenger.sendMessageToMe('Error in Evaluation occured.  Message: ' + str(e))
         raise e
+
+    telegramMessenger.sendMessageToMe('Translation/ Evaluation finished')
+
+
+
 
 
 
