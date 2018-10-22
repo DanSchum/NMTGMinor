@@ -1,5 +1,6 @@
 #!/bin/sh
 /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6/bin/python3.6 train.py \
--data /project/iwslt2014c/MT/user/dschumacher/Masterarbeit_Misc/MiscProjectPycharm/preprocessing_output/prepared_input_data \
+-data /home/dschumacher/dschumacher_working_dir/training_data/ted_talks_english/after_preprocessing/preprocessing_19_10_18_bpe_complete/preproc_output \
 -data_format bin \
--model transformer 
+-model transformer \
+-batch_size_words 4096
