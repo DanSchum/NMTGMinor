@@ -4,6 +4,7 @@ import argparse
 import torch
 
 from onmt.data_utils.IndexedDataset import IndexedDatasetBuilder
+from TelegramSendMyselfMessages import TelegramSendMyselfMessages
 
 
 def loadImageLibs():

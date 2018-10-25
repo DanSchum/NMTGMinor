@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6/bin/python3.6 preprocess.py \
--train_src /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/Gigaword/bpe_23_10_18/encoded_preproc_train.article.txt \
--train_tgt /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/Gigaword/bpe_23_10_18/encoded_preproc_train.title.txt \
--valid_src /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/Gigaword/bpe_23_10_18/encoded_preproc_valid.article.filter.txt \
--valid_tgt /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/Gigaword/bpe_23_10_18/encoded_preproc_valid.title.filter.txt \
--save_data /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/Gigaword/transformer_preproc_bpe_24_10_18/preproc_output \
--src_seq_length 2048 \
+-train_src /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/tedtalks/preproc_truncated_source/preproc_trainingSplitSource_lowercase_tokenizer_cleaned.txt \
+-train_tgt /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/tedtalks/preproc_truncated_source/preproc_trainingSplitTarget_lowercase_tokenizer_cleaned.txt \
+-valid_src /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/tedtalks/preproc_truncated_source/preproc_validationSplitSource_lowercase_tokenizer_cleaned.txt \
+-valid_tgt /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/tedtalks/preproc_truncated_source/preproc_validationSplitTarget_lowercase_tokenizer_cleaned.txt \
+-save_data /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/tedtalks/transformer_preproc_truncated_source/preproc_output \
+-src_seq_length 1024 \
 -tgt_seq_length 512
