@@ -135,8 +135,12 @@ def main():
         else:
             trainer = XETrainer(model, loss_function, trainData, validData, dicts, opt)
 
+    trainer.run(save_file=opt.load_from)
+
+
+if __name__ == "__main__":
     try:
-        trainer.run(save_file=opt.load_from)
+        main()
     except Exception as e:
         try:
             telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
@@ -145,8 +149,6 @@ def main():
             print(e)
         raise e
 
-if __name__ == "__main__":
-    main()
     try:
         telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
         telegramMessenger.sendMessageToMe('Training finished')
