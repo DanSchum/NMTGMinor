@@ -2,3 +2,4 @@
 .idea/
 python_command_example.txt
 TelegramSendMyselfMessages
+logs/*
