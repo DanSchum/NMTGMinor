@@ -332,4 +332,18 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        try:
+            telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+            telegramMessenger.sendMessageToMe('Error in Preprocessing occured.  Message: ' + str(e))
+        except Exception as e:
+            print(e)
+        raise e
+
+    try:
+        telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+        telegramMessenger.sendMessageToMe('Preprocessing on Server finished')
+    except Exception as e:
+        print(e)
