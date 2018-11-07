@@ -21,37 +21,42 @@ def make_parser(parser):
                         path to the pretrained model.""")
     parser.add_argument('-model', default='recurrent',
                         help="Optimization method. [recurrent|transformer|stochastic_transformer]")
+    # TODO: D.S: Figure this out. What is meant by layers here: In paper there are 6 layers stacked per encoder/decoder.
     parser.add_argument('-layers', type=int, default=2,
                         help='Number of layers in the LSTM encoder/decoder')                   
+
+
     # Recurrent Model options
     parser.add_argument('-rnn_size', type=int, default=512,
                         help='Size of LSTM hidden states')
     parser.add_argument('-word_vec_size', type=int, default=512,
                         help='Word embedding sizes')
-    parser.add_argument('-input_feed', type=int, default=1,
+    #D.S: Attention Settings?
+    parser.add_argument('-input_feed', type=int, default=1, #D.S: Default is yes. Its standard implementation of transformer
                         help="""Feed the context vector at each time step as
                         additional input (via concatenation with the word
                         embeddings) to the decoder.""")
-
-    parser.add_argument('-brnn_merge', default='concat',
+    #D.S: Attention Settings?
+    parser.add_argument('-brnn_merge', default='concat', #D.S: Standard way is here to contact them to a matrix, where attention vector is used to select the important source parts
                         help="""Merge action for the bidirectional hidden states:
                         [concat|sum]""")
 
-    # Transforer Model options
+
+    # Transforer Model
     parser.add_argument('-model_size', type=int, default=512,
-        help='Size of embedding / transformer hidden')      
+        help='Size of embedding / transformer hidden')  #D.S: dmodel which controls the output/input size of all transformer sublayers
     parser.add_argument('-inner_size', type=int, default=2048,
-        help='Size of inner feed forward layer')  
+        help='Size of inner feed forward layer')  #D.S: Size of FF layer in each transformer sublayer
     parser.add_argument('-n_heads', type=int, default=8,
-        help='Number of heads for multi-head attention') 
+        help='Number of heads for multi-head attention') #D.S: Multihead Attention (h=8), which is default from original paper
     parser.add_argument('-checkpointing', type=int, default=0,
-        help='Number of checkpointed layers in the Transformer') 
+        help='Number of checkpointed layers in the Transformer')  #D.S: TODO: ??
     parser.add_argument('-attn_dropout', type=float, default=0.1,
-                        help='Dropout probability; applied on multi-head attention.')   
+                        help='Dropout probability; applied on multi-head attention.') #D.S: Std from t2t is 0.0 (v1) and 0.1 (v2)
     parser.add_argument('-emb_dropout', type=float, default=0.1,
-                        help='Dropout probability; applied on top of embedding.')    
+                        help='Dropout probability; applied on top of embedding.')    #D.S: TODO: Same as Relu Dropout??
     parser.add_argument('-weight_norm', action='store_true',
-                      help='Apply weight normalization on linear modules')
+                      help='Apply weight normalization on linear modules') #D.S: Why not?
     parser.add_argument('-layer_norm', default='fast',
                       help='Layer normalization type')
     parser.add_argument('-death_rate', type=float, default=0.5,
@@ -59,34 +64,35 @@ def make_parser(parser):
     parser.add_argument('-death_type', type=str, default='linear_decay',
                         help='Stochastic layer death type: linear decay or uniform')  
     parser.add_argument('-activation_layer', default='linear_relu_linear', type=str,
-                        help='The activation layer in each transformer block')                        
+                        help='The activation layer in each transformer block') #D.S: std: dense_relu_dense
     parser.add_argument('-time', default='positional_encoding', type=str,
-                        help='Type of time representation positional_encoding|gru|lstm')                        
+                        help='Type of time representation positional_encoding|gru|lstm') #D.S: Transformer default is positional encoding via trigonometic functions
     parser.add_argument('-version', type=float, default=1.0,
-                        help='Transformer version. 1.0 = Google type | 2.0 is different')                    
+                        help='Transformer version. 1.0 = Google type | 2.0 is different')    #D.S: TODO: ??
     parser.add_argument('-attention_out', default='default',
-                      help='Type of attention out. default|combine')
+                      help='Type of attention out. default|combine') #D.S: TODO: What is default (concat??)
     parser.add_argument('-residual_type', default='regular',
-                      help='Type of residual type. regular|gated')
+                      help='Type of residual type. regular|gated') #D.S: https://arxiv.org/pdf/1611.01260.pdf
+    #Gates residual connection do apply additional control how much of the input x is directly forwarded to output of the layer which is using the residual connection
     # Optimization options
     parser.add_argument('-encoder_type', default='text',
-                        help="Type of encoder to use. Options are [text|img].")
+                        help="Type of encoder to use. Options are [text|img].") #D.S: Default
     parser.add_argument('-init_embedding', default='normal',
-                        help="How to init the embedding matrices. Xavier or Normal.")
+                        help="How to init the embedding matrices. Xavier or Normal.") #D.S: http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization
     parser.add_argument('-batch_size_words', type=int, default=2048,
-                        help='Maximum batch size in word dimension')
+                        help='Maximum batch size in word dimension') #D.S: TODO: Is this the maxiumum of words that can be processed in one cycle?
     parser.add_argument('-batch_size_sents', type=int, default=128,
-                        help='Maximum number of sentences in a batch')
+                        help='Maximum number of sentences in a batch') #D.S: TODO: ??
     parser.add_argument('-max_generator_batches', type=int, default=32,
                         help="""Maximum batches of words in a sequence to run
                         the generator on in parallel. Higher is faster, but uses
-                        more memory.""")
+                        more memory.""") #D.S: Maybe set down due to memory problems
     parser.add_argument('-batch_size_update', type=int, default=2048,
-                        help='Maximum number of words per update')                    
+                        help='Maximum number of words per update') #D.S: TODO: ??
     parser.add_argument('-batch_size_multiplier', type=int, default=1,
-                        help='Maximum number of words per update')                    
+                        help='Maximum number of words per update')  #D.S: TODO: The default is pretty low. Why?
     parser.add_argument('-max_position_length', type=int, default=1024,
-        help='Maximum length for positional embedding')    
+        help='Maximum length for positional embedding') #D.S: TODO: Should be the same as dmodel
 
     parser.add_argument('-epochs', type=int, default=13,
                         help='Number of training epochs')
@@ -111,10 +117,14 @@ def make_parser(parser):
     parser.add_argument('-curriculum', type=int, default=-1,
                         help="""For this many epochs, order the minibatches based
                         on source sequence length. Sometimes setting this to 1 will
-                        increase convergence speed.""")
+                        increase convergence speed.""") #D.S: Ordering the source sequences in regard of their length brings the following advantage:
+                        # Because of sequences on one batch need have the same length, they get padded with specal token. The amount of special tokens
+                        # should be as low as possible, because of increased performance usage. Thats why they are sorted to keep all inputs of a batch nearly the same length
     parser.add_argument('-extra_shuffle', action="store_true",
                         help="""By default only shuffle mini-batch order; when true,
-                        shuffle and re-assign mini-batches""")
+                        shuffle and re-assign mini-batches""") #D.S: Try No
+
+
     parser.add_argument('-normalize_gradient', action="store_true",
                         help="""Normalize the gradients by number of tokens before updates""")
     parser.add_argument('-virtual_gpu', type=int, default=1,
@@ -124,7 +134,7 @@ def make_parser(parser):
                         help="""Starting learning rate. If adagrad/adadelta/adam is
                         used, then this is the global learning rate. Recommended
                         settings: sgd = 1, adagrad = 0.1,
-                        adadelta = 1, adam = 0.001""")
+                        adadelta = 1, adam = 0.001""") #D.S: TODO: Set on 0.001
     parser.add_argument('-learning_rate_decay', type=float, default=1,
                         help="""If update_learning_rate, decay learning rate by
                         this much if (i) perplexity does not decrease on the
@@ -141,11 +151,11 @@ def make_parser(parser):
     parser.add_argument('-reset_optim', action='store_true',
                         help='Reset the optimizer running variables')
     parser.add_argument('-beta1', type=float, default=0.9,
-                        help="""beta_1 value for adam""")
+                        help="""beta_1 value for adam""") #D.S: Fine due to tensor2tensor
     parser.add_argument('-beta2', type=float, default=0.98,
-                        help="""beta_2 value for adam""")
+                        help="""beta_2 value for adam""") #D.S: Fine due to tensor2tensor
     parser.add_argument('-weight_decay', type=float, default=0.0,
-                        help="""weight decay (L2 penalty)""")
+                        help="""weight decay (L2 penalty)""") #D.S: Fine
     parser.add_argument('-amsgrad', action='store_true',
                         help='Using AMSGRad for adam')    
     parser.add_argument('-update_method', default='regular',
@@ -154,7 +164,7 @@ def make_parser(parser):
     parser.add_argument('-tie_weights', action='store_true',
                         help='Tie the weights of the encoder and decoder layer')
     parser.add_argument('-join_embedding', action='store_true',
-                        help='Jointly train the embedding of encoder and decoder in one weight')
+                        help='Jointly train the embedding of encoder and decoder in one weight') #D.S: TODO: ??
     parser.add_argument('-pre_word_vecs_enc',
                         help="""If a valid path is specified, then this will load
                         pretrained word embeddings on the encoder side.

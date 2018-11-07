@@ -83,7 +83,8 @@ def makeJoinVocabulary(filenames, size, input_type="word"):
     vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
                        onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD],
                       lower=opt.lower)
-    
+
+
     for filename in filenames:
         print("Reading file %s ... " % filename)
         with open(filename) as f:
@@ -256,6 +257,8 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_le
 
 
 def main():
+
+    print('Select Save data format (raw or bin) is: ' + str(opt.format))
 
     dicts = {}
     
