@@ -32,9 +32,9 @@ class TransformerEncoder(nn.Module):
     
         super(TransformerEncoder, self).__init__()
         
-        self.model_size = opt.model_size
-        self.n_heads = opt.n_heads
-        self.inner_size = opt.inner_size
+        self.model_size = opt.model_size #dmodel which is the dimension between sublayers
+        self.n_heads = opt.n_heads #heads in multihead attention
+        self.inner_size = opt.inner_size #Size of feed forward network in sublayer
         self.layers = opt.layers
         self.dropout = opt.dropout
         self.word_dropout = opt.word_dropout

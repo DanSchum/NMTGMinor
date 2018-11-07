@@ -4,6 +4,7 @@
 -data_format raw \
 -model transformer \
 -learning_rate 0.001 \
+-layers 6 \
 -log_interval 1
 #-batch_size_words 4096 \
 #-batch_size_sents 64 \

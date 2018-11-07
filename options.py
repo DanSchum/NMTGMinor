@@ -22,6 +22,7 @@ def make_parser(parser):
     parser.add_argument('-model', default='recurrent',
                         help="Optimization method. [recurrent|transformer|stochastic_transformer]")
     # TODO: D.S: Figure this out. What is meant by layers here: In paper there are 6 layers stacked per encoder/decoder.
+    #Answer 07.11.18: Yes, this should be set to 6 in respect to original paper
     parser.add_argument('-layers', type=int, default=2,
                         help='Number of layers in the LSTM encoder/decoder')                   
 
