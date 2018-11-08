@@ -53,13 +53,13 @@ parser.add_argument('-tgt_vocab',
                     help="Path to an existing target vocabulary")
 
 parser.add_argument('-src_seq_length', type=int, default=64,
-                    help="Maximum source sequence length")
+                    help="Maximum source sequence length") #Maximum Amount of words per line which are preprocessed for this line
 parser.add_argument('-src_seq_length_trunc', type=int, default=0,
-                    help="Truncate source sequence length.")
+                    help="Truncate source sequence length.") #If != 0 the amount of words per line are cutted to this amount, if they are below the limit of hyperparam -src_seq_length
 parser.add_argument('-tgt_seq_length', type=int, default=66,
-                    help="Maximum target sequence length to keep.")
+                    help="Maximum target sequence length to keep.") #Maximum Amount of words per line which are preprocessed for this line
 parser.add_argument('-tgt_seq_length_trunc', type=int, default=0,
-                    help="Truncate target sequence length.")
+                    help="Truncate target sequence length.") #If != 0 the amount of words per line are cutted to this amount, if they are below the limit of hyperparam -src_seq_length
 
 parser.add_argument('-shuffle',    type=int, default=1,
                     help="Shuffle data")
@@ -110,14 +110,24 @@ def makeJoinVocabulary(filenames, size, input_type="word"):
 
 
 def makeVocabulary(filename, size, input_type='word'):
+    '''
+    Creates vocabulary from source file by splitting sentences into words and adding them to vocab. Also tokens
+    for Padding, unknown, begin and end of sentence are added.
+
+    :param filename: Filename to be loaded and lines splitted in words to be added to vocab
+    :param size: Maximum Size of Vocab
+    :param input_type: Vocab type: words or characters
+    :return:
+    '''
+    #Init of Vocabulary with already containg tokens for Padding, unkown, begin and end of sentence
     vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
                        onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD],
-                      lower=opt.lower)
+                      lower=opt.lower) #Parameter if all tokens should be converted to lowercase
 
-    with open(filename) as f:
+    with open(filename) as f: #open source file
         for sent in f.readlines():
             if input_type == "word":
-                for word in sent.split():
+                for word in sent.split(): #split sentences into words and add them to the vocabulary
                     vocab.add(word)
             elif input_type == "char":
                 sent = sent.strip()
@@ -127,7 +137,7 @@ def makeVocabulary(filename, size, input_type='word'):
                 raise NotImplementedError("Input type not implemented")
 
     originalSize = vocab.size()
-    vocab = vocab.prune(size)
+    vocab = vocab.prune(size) #If vocab is to big cut it off
     print('Created dictionary of size %d (pruned from %d)' %
           (vocab.size(), originalSize))
 
@@ -167,6 +177,19 @@ def saveVocabulary(name, vocab, file):
 
 
 def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_length=64, sort_by_target=False, input_type='word'):
+    '''
+
+
+    :param srcFile: Source file path
+    :param tgtFile: Target file path
+    :param srcDicts: Source vocabulary. Already contains complete (or pruned) source dict
+    :param tgtDicts: Traget vocabulary. Already contains complete (or pruned) target dict
+    :param max_src_length: Sets the max source sequence (sentence) length. Otherwise is ignored
+    :param max_tgt_length: Sets the max target sequence (sentence) length. Otherwise is ignored
+    :param sort_by_target: Changes the sorting. If true the entries in source and target are sorted by the length of the target sequence. Otherwise they are sorted by the length of source sequence.
+    :param input_type:
+    :return: returns source and target dict which contains all sequences
+    '''
     src, tgt = [], []
     sizes = []
     count, ignored = 0, 0
@@ -197,26 +220,27 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_le
             continue
         
         if input_type == 'word':
-            srcWords = sline.split()
+            srcWords = sline.split() #Create list of word from line
             tgtWords = tline.split()
         elif input_type == 'char':
             srcWords = list(sline)
             tgtWords = list(tline)
 
+        # Check if words in line are less than limit (max_src_length)
         if len(srcWords) <= max_src_length \
            and len(tgtWords) <= max_tgt_length - 2:
 
             # Check truncation condition.
             if opt.src_seq_length_trunc != 0:
-                srcWords = srcWords[:opt.src_seq_length_trunc]
+                srcWords = srcWords[:opt.src_seq_length_trunc] #Truncate the amount of words (Cut the words at limit index which is set as hyperparameter)
             if opt.tgt_seq_length_trunc != 0:
-                tgtWords = tgtWords[:opt.tgt_seq_length_trunc]
+                tgtWords = tgtWords[:opt.tgt_seq_length_trunc] #Same here for target set
             
             
             # For src text, we use BOS for possible reconstruction
+            #D.S: TODO: Why is here no BOS and EOS in src used?
             src += [srcDicts.convertToIdx(srcWords,
-                                              onmt.Constants.UNK_WORD)]
-                                              
+                                              onmt.Constants.UNK_WORD)] #Converts sequence (e.g. sentence) to list of indicies
 
             tgt += [tgtDicts.convertToIdx(tgtWords,
                                           onmt.Constants.UNK_WORD,
@@ -227,9 +251,9 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_le
             else:
                 sizes += [len(srcWords)]
         else:
-            ignored += 1
+            ignored += 1 #Increment the amount of ignored lines
 
-        count += 1
+        count += 1 #Increment the amount of checked lines of dataset
 
         if count % opt.report_every == 0:
             print('... %d sentences prepared' % count)
@@ -239,7 +263,7 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_le
 
     if opt.shuffle == 1:
         print('... shuffling sentences')
-        perm = torch.randperm(len(src))
+        perm = torch.randperm(len(src)) #Random Permutation
         src = [src[idx] for idx in perm]
         tgt = [tgt[idx] for idx in perm]
         sizes = [sizes[idx] for idx in perm]
@@ -267,6 +291,7 @@ def main():
                                       opt.tgt_vocab_size, join=True, input_type=opt.input_type)
         dicts['tgt'] = dicts['src']
     else:
+        #opt.src_vocab destination file of source vocabulary
         dicts['src'] = initVocabulary('source', opt.train_src, opt.src_vocab,
                                       opt.src_vocab_size, input_type=opt.input_type)
 
@@ -276,13 +301,14 @@ def main():
     valid = {}
     
     print('Preparing training ...')
-        
+
+    #Inputs Source and Target Data (Training), Source and Target Vocalulary, and Hyperparameter
     train['src'], train['tgt'] = makeData(opt.train_src, opt.train_tgt,
                                           dicts['src'], dicts['tgt'],
-                                          max_src_length=opt.src_seq_length,
-                                          max_tgt_length=opt.tgt_seq_length, 
-                                          sort_by_target=opt.sort_by_target,
-                                          input_type=opt.input_type)
+                                          max_src_length=opt.src_seq_length, #Maximum Source sequence length
+                                          max_tgt_length=opt.tgt_seq_length, #Maximum Target Sequence length
+                                          sort_by_target=opt.sort_by_target, #Sort?
+                                          input_type=opt.input_type) #Raw or bin
 
     print('Preparing validation ...')
    

@@ -80,7 +80,7 @@ def make_parser(parser):
                         help="Type of encoder to use. Options are [text|img].") #D.S: Default
     parser.add_argument('-init_embedding', default='normal',
                         help="How to init the embedding matrices. Xavier or Normal.") #D.S: http://andyljones.tumblr.com/post/110998971763/an-explanation-of-xavier-initialization
-    parser.add_argument('-batch_size_words', type=int, default=2048,
+    parser.add_argument('-batch_size_words', type=int, default=2048, #This is the maximum number of words which can be processed within one batch
                         help='Maximum batch size in word dimension') #D.S: TODO: Is this the maxiumum of words that can be processed in one cycle?
     parser.add_argument('-batch_size_sents', type=int, default=128,
                         help='Maximum number of sentences in a batch') #D.S: TODO: ??

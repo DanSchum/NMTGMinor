@@ -91,7 +91,7 @@ class FP16XETrainer(XETrainer):
         batch_order = data.create_order(random=False)
         self.model.eval()
         """ New semantics of PyTorch: save space by not creating gradients """
-        with torch.no_grad():
+        with torch.no_grad(): #Deactivates gradient calculation. Which is helpful in inference phase where no backward path is used. This saves memory.
             for i in range(len(data)):
                     
                 samples = data.next()
@@ -145,13 +145,13 @@ class FP16XETrainer(XETrainer):
         num_accumulated_sents = 0
         oom_count = 0
         
-        for i in range(iteration, nSamples):
+        for i in range(iteration, nSamples): #starts at iteration and goes until samples reached.
 
             curriculum = (epoch < opt.curriculum)
             
             samples = trainData.next(curriculum=curriculum)
                         
-            batch = self.to_variable(samples[0])
+            batch = self.to_variable(samples[0]) #Uses one sequence of input data as batch
             
             oom = False
             try:
@@ -313,6 +313,7 @@ class FP16XETrainer(XETrainer):
             del checkpoint['optim']
             del checkpoint
         else:
+            #Go here for new started training
             batchOrder = None
             iteration = 0
             print('Initializing model parameters')
@@ -320,7 +321,7 @@ class FP16XETrainer(XETrainer):
             resume=False
         
         
-        valid_loss = self.eval(self.validData)
+        valid_loss = self.eval(self.validData) #Evaluates the current new initilized model with the valid data.
         valid_ppl = math.exp(min(valid_loss, 100))
         print('Validation perplexity: %g' % valid_ppl)
         #~ 
@@ -330,10 +331,10 @@ class FP16XETrainer(XETrainer):
             print('')
 
             #  (1) train for one epoch on the training set
-            train_loss = self.train_epoch(epoch, resume=resume,
+            train_loss = self.train_epoch(epoch, resume=resume, #Parameters are just important if checkpoint was used.
                                                  batchOrder=batchOrder,
                                                  iteration=iteration)
-            train_ppl = math.exp(min(train_loss, 100))
+            train_ppl = math.exp(min(train_loss, 100)) #e^x
             print('Train perplexity: %g' % train_ppl)
 
             #  (2) evaluate on the validation set

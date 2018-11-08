@@ -131,8 +131,12 @@ def main():
         raise NotImplementedError("Warning! Multi-GPU training is not fully tested and potential bugs can happen.")
     else:
         if opt.fp16:
+            print('FP16XETrainer is used \n')
+            sys.stdout.flush()
             trainer = FP16XETrainer(model, loss_function, trainData, validData, dicts, opt)
         else:
+            print('XETrainer is used \n')
+            sys.stdout.flush()
             trainer = XETrainer(model, loss_function, trainData, validData, dicts, opt)
 
     trainer.run(save_file=opt.load_from)

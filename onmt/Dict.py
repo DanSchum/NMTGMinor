@@ -112,22 +112,31 @@ class Dict(object):
         return newDict
 
     def convertToIdx(self, labels, unkWord, bosWord=None, eosWord=None):
-        """
+        '''
         Convert `labels` to indices. Use `unkWord` if not found.
-        Optionally insert `bosWord` at the beginning and `eosWord` at the .
-        """
+        Optionally insert `bosWord` at the beginning and `eosWord` at the end.
+        Returns list/array of labels (e.g. a sentence) with BOS at beginning, then the tokens and EOS at the end.
+
+        :param labels: List of labels which should be added to Vocabulary
+        :param unkWord: Token for unknown word
+        :param bosWord: Token for begin of sentence
+        :param eosWord: Token for end of sentence
+        :return:
+        '''
         vec = []
 
         if bosWord is not None:
             vec += [self.lookup(bosWord)]
 
-        unk = self.lookup(unkWord)
-        vec += [self.lookup(label, default=unk) for label in labels]
+        unk = self.lookup(unkWord) #Check if unkown word token is already part of vocabulary
+        #vec += adds array to array
+        vec += [self.lookup(label, default=unk) for label in labels] #Check for all labels in list of labels if they
+                    # already part of the vocabulary. If not it returns unkown token, which is then added to cev list
 
         if eosWord is not None:
-            vec += [self.lookup(eosWord)]
+            vec += [self.lookup(eosWord)] #Add EOS at the end of sequence
 
-        return torch.LongTensor(vec)
+        return torch.LongTensor(vec) #Returns array with whole sequence including special tokens
 
     def convertToLabels(self, idx, stop):
         """

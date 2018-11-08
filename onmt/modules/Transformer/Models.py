@@ -35,7 +35,7 @@ class TransformerEncoder(nn.Module):
         self.model_size = opt.model_size #dmodel which is the dimension between sublayers
         self.n_heads = opt.n_heads #heads in multihead attention
         self.inner_size = opt.inner_size #Size of feed forward network in sublayer
-        self.layers = opt.layers
+        self.layers = opt.layers #Amount of stacked encoder/decoder layers in the model
         self.dropout = opt.dropout
         self.word_dropout = opt.word_dropout
         self.attn_dropout = opt.attn_dropout
@@ -53,17 +53,21 @@ class TransformerEncoder(nn.Module):
             self.time_transformer = nn.GRU(self.model_size, self.model_size, 1, batch_first=True)
         elif opt.time == 'lstm':
             self.time_transformer = nn.LSTM(self.model_size, self.model_size, 1, batch_first=True)
-        
+
+        #Performs Preprocessing (here its dropout)
         self.preprocess_layer = PrePostProcessing(self.model_size, self.emb_dropout, sequence='d', static=False)
-        
+
+        #Performs Postprocessing (here its layerNorm)
         self.postprocess_layer = PrePostProcessing(self.model_size, 0, sequence='n')
-        
+
+
         self.positional_encoder = positional_encoder
     
         self.build_modules()
         
     def build_modules(self):
-        
+
+        #Adding here the amount of stacked encoders/decoders in the model
         self.layer_modules = nn.ModuleList([EncoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout) for _ in range(self.layers)])
 
     def forward(self, input, **kwargs):

@@ -84,15 +84,25 @@ class XETrainer(BaseTrainer):
         self.optim = onmt.Optim(opt)
         
         if self.cuda:
-           torch.cuda.set_device(self.opt.gpus[0])
-           torch.manual_seed(self.opt.seed)
-           self.loss_function = self.loss_function.cuda()
-           self.model = self.model.cuda()
+            if not torch.cuda.is_available():
+                print('Warning cuda is not available on this machine!')
+            torch.cuda.set_device(self.opt.gpus[0])
+            torch.manual_seed(self.opt.seed)
+            self.loss_function = self.loss_function.cuda()
+            self.model = self.model.cuda()
         
         self.optim.set_parameters(self.model.parameters())
 
     def save(self, epoch, valid_ppl, batchOrder=None, iteration=-1):
-        
+        '''
+        Writes current model to file
+
+        :param epoch:
+        :param valid_ppl:
+        :param batchOrder:
+        :param iteration:
+        :return:
+        '''
         opt = self.opt
         model = self.model
         dicts = self.dicts
@@ -145,7 +155,7 @@ class XETrainer(BaseTrainer):
                 total_loss += loss_data
                 total_words += targets.data.ne(onmt.Constants.PAD).sum().item()
 
-        self.model.train()
+        self.model.train() #D.S: TODO: Why is this done here?
         return total_loss / total_words
         
     def train_epoch(self, epoch, resume=False, batchOrder=None, iteration=0):
@@ -191,7 +201,7 @@ class XETrainer(BaseTrainer):
             oom = False
             try:
             
-                outputs = self.model(batch)
+                outputs = self.model(batch) #self.model(batch) executes the forward path of our model
                     
                 targets = batch[1][1:]
                 tgt_inputs = batch[1][:-1]
@@ -274,6 +284,7 @@ class XETrainer(BaseTrainer):
                         report_src_words/(time.time()-start),
                         report_tgt_words/(time.time()-start),
                         str(datetime.timedelta(seconds=int(time.time() - self.start_time)))))
+                    sys.stdout.flush()
 
                     report_loss, report_tgt_words = 0, 0
                     report_src_words = 0
