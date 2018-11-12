@@ -9,5 +9,5 @@ timestamp() {
 timestampValue=$(timestamp)
 outputFilename="logs/outputPreprocessing_"$timestampValue".log"
 #echo $outputFilename
-sbatch -c 1 --mem=10000 -t 1-00 -p HPC -o $outputFilename -e $outputFilename preprocessing_command_wrapper.sh
+sbatch -c 1 --mem=10000 -t 1-00 -p HPC -o $outputFilename -e $outputFilename cmd_preprocessing_command_wrapper.sh
 
