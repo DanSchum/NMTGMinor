@@ -37,7 +37,7 @@ class TransformerEncoder(nn.Module):
         self.inner_size = opt.inner_size #Size of feed forward network in sublayer
         self.layers = opt.layers #Amount of stacked encoder/decoder layers in the model
         self.dropout = opt.dropout
-        self.word_dropout = opt.word_dropout
+        self.word_dropout = opt.word_dropout #D.S: Dropout which is applied by converting input to embedding
         self.attn_dropout = opt.attn_dropout
         self.emb_dropout = opt.emb_dropout
         self.time = opt.time
@@ -82,6 +82,8 @@ class TransformerEncoder(nn.Module):
         """
 
         """ Embedding: batch_size x len_src x d_model """
+        #D.S: self.training is always 0
+        #D.S: word_lut is look up table which contains embedding for each
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
         
         """ Scale the emb by sqrt(d_model) """
@@ -92,7 +94,12 @@ class TransformerEncoder(nn.Module):
         emb = self.time_transformer(emb)
         
         emb = self.preprocess_layer(emb)
-        
+
+
+        #D.S. tensor.eq computes elementwise equality (Compares each element. If elements are the same then return tensor has 1 at this element position, 0 otherwise.
+        #D.S: Input tensor have to be the same dimensions
+        #D.S: mask_src is 1 where input is 0. Mask is set size one in dimension 1
+        #D.S: TODO: mask_src: Not sure how this is working??
         mask_src = input.eq(onmt.Constants.PAD).unsqueeze(1) # batch_size x len_src x 1 for broadcasting
         
         #~ pad_mask = input.ne(onmt.Constants.PAD)) # batch_size x len_src
@@ -100,10 +107,10 @@ class TransformerEncoder(nn.Module):
         context = emb.transpose(0, 1).contiguous()
         
         for i, layer in enumerate(self.layer_modules):
-            
+
+            #D.S: TODO: self.training is never set, so if always fails
             if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:        
                 context = checkpoint(custom_layer(layer), context, mask_src)
-
             else:
                 context = layer(context, mask_src)      # batch_size x len_src x d_model
             
@@ -169,27 +176,27 @@ class TransformerDecoder(nn.Module):
         
     def build_modules(self):
         self.layer_modules = nn.ModuleList([DecoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout) for _ in range(self.layers)])
-    
+
     def renew_buffer(self, new_len):
-        
+
         print(new_len)
         self.positional_encoder.renew(new_len)
         mask = torch.ByteTensor(np.triu(np.ones((new_len,new_len)), k=1).astype('uint8'))
         self.register_buffer('mask', mask)
-    
+
     def mark_pretrained(self):
-        
+
         self.pretrained_point = self.layers
-        
-    
+
+
     def add_layers(self, n_new_layer):
-        
+
         self.new_modules = list()
         self.layers += n_new_layer
-        
+
         for i in range(n_new_layer):
-            layer = EncoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout) 
-            
+            layer = EncoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout)
+
             # the first layer will use the preprocessing which is the last postprocessing
             if i == 0:
                 layer.preprocess_attn = self.postprocess_layer
@@ -232,9 +239,11 @@ class TransformerDecoder(nn.Module):
         
         output = emb.transpose(0, 1).contiguous()
 
+        #D.S: Iterate through all layers in Transformer Decoder
         for i, layer in enumerate(self.layer_modules):
-            
-            if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:           
+
+            #D.S:
+            if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                 
                 output, coverage = checkpoint(custom_layer(layer), output, context, mask_tgt, mask_src) 
                                                                               # batch_size x len_src x d_model

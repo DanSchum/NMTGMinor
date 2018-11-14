@@ -13,10 +13,11 @@ def group_linear(linears, input, bias=False):
             
         weights = [linear.weight for linear in linears]
         
-        weight = torch.cat(weights, dim=0)
+        weight = torch.cat(weights, dim=0) #D.S: Concatenates the given sequence of tensor (here: weights) in the given dimension
+                                            #Here Dimension=0 means in 2D the result is concatenated in the same row
         
         if bias:
-            biases = [linear.bias for linear in linears]
+            biases = [linear.bias for linear in linears] #loop als bias
             bias_ = torch.cat(biases)
         else:
             bias_ = None
@@ -132,6 +133,7 @@ class PrePostProcessing(nn.Module):
             if static:
                 self.dropout = StaticDropout(self.dropout_p)
             else:
+                #D.S: Std false is used
                 self.dropout = nn.Dropout(self.dropout_p, inplace=False)
     
     def forward(self, tensor, input_tensor=None, mask=None):
@@ -156,17 +158,19 @@ class MultiHeadAttention(nn.Module):
     Args:
         h:       number of heads
         d_model: dimension of model
-        p:       dropout probabolity  
-        
+        p:       dropout probabolity
+
     Params:
-        fc_query:  FC layer to project query, d_model x (h x d_head)
+        fc_query:  FC layer to project query, d_model x (h x d_head)  (h * d_head = d_model)
         fc_key:    FC layer to project key,   d_model x (h x d_head)
         fc_value:  FC layer to project value, d_model x (h x d_head)
         fc_concat: FC layer to concat and project multiheads, d_model x (h x d_head)
         
     Inputs Shapes: 
-        query: batch_size x len_query x d_model 
-        key:   batch_size x len_key x d_model   
+        query: batch_size x len_query x d_model (batch_size = amount of samples propagted through network before update,
+                                                len_query = amount of tokens/ words calulated in one interation,
+                                                d_model = embedding size of each token/ word which is then splitted by the multihead attention)
+        key:   batch_size x len_key x d_model
         value: batch_size x len_key x d_model
         mask:  batch_size x len_query x len_key or broadcastable 
         
@@ -184,15 +188,17 @@ class MultiHeadAttention(nn.Module):
         
         assert d_model % h == 0
         
-        self.d_head = d_model//h
-        self.fc_query = Bottle(Linear(d_model, h*self.d_head, bias=False))
-        self.fc_key = Bottle(Linear(d_model, h*self.d_head, bias=False))
+        self.d_head = d_model//h #D.S: d_head = d_v, d_k
+        #D.S. fc_query is fully conntected layer to produce the Linear combination of W_q * x_i = q_i for given word embedding x_i
+        self.fc_query = Bottle(Linear(d_model, h*self.d_head, bias=False)) #D.S: Bottle (Mask for skipping unnecesarry computations)
+        self.fc_key = Bottle(Linear(d_model, h*self.d_head, bias=False))  #D.S. Params Linear(d_in, d_out, bias=True, nonlinearity='linear'):
         self.fc_value = Bottle(Linear(d_model, h*self.d_head, bias=False))
         
-        self.attention_out = onmt.Constants.attention_out
+        self.attention_out = onmt.Constants.attention_out #TODO: Constant not existing??
+        #D.S: Concat all outputs of heads to output of size d_model which is the output of encoder/decoder sublayer
         self.fc_concat = Bottle(Linear(h*self.d_head, d_model, bias=False))
 
-        self.sm = nn.Softmax(dim=-1)
+        self.sm = nn.Softmax(dim=-1) #D.S: Apply softmax on last dimension
         
         if static:
             self.attn_dropout = StaticDropout(attn_p)
@@ -202,24 +208,38 @@ class MultiHeadAttention(nn.Module):
     
         
     def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
-    
-        
-        
-        len_query, b = query.size(0), query.size(1)
+        '''
+        Computes forward step of Multi-Head Attention Layer
+        Mask is used in decoder so that the self-attention layer is not allowed to attend earlier positions.
+
+
+        :param query:  Query is used here also for key and value fields
+        :param key: Query is used here also for key and value fields
+        :param value: Query is used here also for key and value fields
+        :param mask:
+        :param query_mask:
+        :param value_mask:
+        :return:
+        '''
+        len_query, b = query.size(0), query.size(1) #D.S: len_query is amount of tokens per iteration, b = size of batch
         len_key,  b_ = key.size(0), key.size(1)
         
         key_mask = value_mask
-        
+
          # batch_size*h x len_query x d_head
         # project inputs to multi-heads
         if self.share == 1:
+            #D.S: In this position query = key = value??
+            #D.S: Here weight sharing for all components (query, key, value) is done
             shared_qkv = group_linear([self.fc_query.function.linear, self.fc_key.function.linear, self.fc_value.function.linear], query)
             proj_query, proj_key, proj_value = shared_qkv.chunk(3, dim=-1)
         elif self.share == 2:
+            #D.S: Weight sharing just for key and value
             proj_query = self.fc_query(query) # batch_size x len_query x h*d_head
             shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
             proj_key, proj_value = shared_kv.chunk(2, dim=-1)
         else:
+            #D.S. No weight sharing
             proj_query = self.fc_query(query, mask=query_mask)  
             proj_key   = self.fc_key(key, mask=key_mask)             # batch_size x len_key x h*d_head
             proj_value = self.fc_value(value, mask=value_mask)       # batch_size x len_key x h*d_head
@@ -229,28 +249,32 @@ class MultiHeadAttention(nn.Module):
         q = q.contiguous().view(len_query, b*self.h, self.d_head).transpose(0, 1)
         k = k.contiguous().view(len_key,   b*self.h, self.d_head).transpose(0, 1)
         v = v.contiguous().view(len_key,   b*self.h, self.d_head).transpose(0, 1)
-        
+
         q = q * (self.d_head**-0.5)
-        
+
         # get dotproduct softmax attns for each head
+        #D.S: Calculate Score (Step 3.1, Page 7)
         attns = torch.bmm(q, k.transpose(1,2))  # batch_size*h x len_query x len_key
-        
-        attns = attns.view(b, self.h, len_query, len_key) 
-        mask_ = mask.unsqueeze(-3)
+        #D.S: bmm = batch matrix matrix product
+
+        #Reshape of b
+        attns = attns.view(b, self.h, len_query, len_key)  #D.S: TODO: Not sure what is done here
+        mask_ = mask.unsqueeze(-3) #D.S: At dimension -3 put everything in in size one
         # FP16 support: cast to float and back
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
-        attns = F.softmax(attns.float(), dim=-1).type_as(attns)
-        # return mean attention from all heads as coverage 
-        coverage = torch.mean(attns, dim=1) 
+        #D.S: TODO: Is normalization missing here?
+        attns = F.softmax(attns.float(), dim=-1).type_as(attns) #D.S: Page 7, Step 3.3
+        # return mean attention from all heads as coverage
+        coverage = torch.mean(attns, dim=1)
         attns = self.attn_dropout(attns)
         attns = attns.view(b*self.h, len_query, len_key)
         
         # apply attns on value
-        out = torch.bmm(attns, v)      # batch_size*h x len_query x d_head
+        out = torch.bmm(attns, v)      # batch_size*h x len_query x d_head #D.S: Page 7, Step 3.5
         out = out.transpose(0, 1).contiguous().view(len_query, b, self.d)
             
-        out = self.fc_concat(out)
-               
+        out = self.fc_concat(out) #D.S: Upscale with linear transformation
+
         return out, coverage
         
     def step(self, query, key, value, mask, query_mask=None, value_mask=None, buffer=None):
@@ -267,8 +291,9 @@ class MultiHeadAttention(nn.Module):
             # proj_key   = self.fc_key(key, mask=key_mask)             # batch_size x len_key x h*d_head
             # proj_value = self.fc_value(value, mask=value_mask)       # batch_size x len_key x h*d_head
             shared_qkv = group_linear([self.fc_query.function.linear, self.fc_key.function.linear, self.fc_value.function.linear], query)
-            proj_query, proj_key, proj_value = shared_qkv.chunk(3, dim=-1)
+            proj_query, proj_key, proj_value = shared_qkv.chunk(3, dim=-1) #Split tensor back in query, key, value
             if buffer is not None and 'k' in buffer and 'v' in buffer:
+                #D.S: Here all (query, key, value) is propagated through fc layer
                 proj_key = torch.cat([buffer['k'], proj_key], dim=0) # time first
                 buffer['k'] = proj_key
                 proj_value = torch.cat([buffer['v'], proj_value], dim=0) # time first
@@ -280,16 +305,19 @@ class MultiHeadAttention(nn.Module):
                 buffer['k'] = proj_key
                 buffer['v'] = proj_value
         elif self.share == 2:
+            #Here just the queries are propagated through fc layer
             proj_query = self.fc_query(query) # batch_size x len_query x h*d_head
             if buffer is not None and 'c_k' in buffer and 'c_v' in buffer:
                 proj_key = buffer['c_k']
                 proj_value = buffer['c_v']
             else:
+                #If key or value is not in buffer, do propagation through fc layer
                 if buffer is None:
+                        #If buffer is not initialized, do init as new dictionary
                     buffer = dict()
-                shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
-                proj_key, proj_value = shared_kv.chunk(2, dim=-1)
-                buffer['c_k'] = proj_key
+                shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key) #propagate the key and value
+                proj_key, proj_value = shared_kv.chunk(2, dim=-1) #split result of fc layer into key and value
+                buffer['c_k'] = proj_key #Set buffer
                 buffer['c_v'] = proj_value
         else:
             raise NotImplementedError
@@ -395,7 +423,9 @@ class EncoderLayer(nn.Module):
         self.preprocess_ffn = PrePostProcessing(d_model, p, sequence='n')
         self.postprocess_ffn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
         self.multihead = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=2)
-        
+        #D.S: Share=2, Weightsharing just between key and value
+
+        #D.S: TODO: Activation Layers of FF
         if onmt.Constants.activation_layer == 'linear_relu_linear':
             ff_p = p
             feedforward = FeedForward(d_model, d_ff, ff_p,static=onmt.Constants.static)
@@ -407,7 +437,7 @@ class EncoderLayer(nn.Module):
     def forward(self, input, attn_mask, pad_mask=None):
         pad_mask = None
         query = self.preprocess_attn(input)
-        out, _ = self.multihead(query, query, query, attn_mask)
+        out, _ = self.multihead(query, query, query, attn_mask) #D.S: Query is used as input also for key, value (which is the same at this point. Naming in call is bad)
         input = self.postprocess_attn(out, input)
         
         """ Feed forward layer 
@@ -464,6 +494,7 @@ class DecoderLayer(nn.Module):
         
         
         self.multihead_tgt = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=1)
+        #D.S: Weight sharing between query, key and value
         self.multihead_src = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=2)
         
         if onmt.Constants.activation_layer == 'linear_relu_linear':
@@ -485,8 +516,11 @@ class DecoderLayer(nn.Module):
         query = self.preprocess_attn(input)
         
         self_context = query
-        
-        out, _ = self.multihead_tgt(query, self_context, self_context, mask_tgt)
+
+        #D.S: def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
+        #D.S: Also query is used for key and value components
+        out, converage = self.multihead_tgt(query, self_context, self_context, mask_tgt)
+        #converage is unused here
         
         if residual_dropout > 0:
             input_ = F.dropout(input, residual_dropout, self.training, False)
