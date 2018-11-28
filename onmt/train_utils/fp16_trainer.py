@@ -311,6 +311,10 @@ class FP16XETrainer(XETrainer):
         # Try to load the save_file
         checkpoint = None
         if save_file:
+            # TODO: D.S: Remove afterwards
+            print('Torch load executed')
+            sys.stdout.flush()
+
             checkpoint = torch.load(save_file)
         
         
@@ -339,7 +343,6 @@ class FP16XETrainer(XETrainer):
             iteration = 0
 
             # TODO: D.S: Just remove flush
-
             print('Initializing model parameters')
             sys.stdout.flush()
             start_time = time.time()
@@ -351,7 +354,7 @@ class FP16XETrainer(XETrainer):
 
             end_time = time.time()
 
-            # TODO: D.S: Remove afterwards
+            #TODO: D.S: Remove afterwards
             print('Init Model done')
             print('Exc Time: ' + str(end_time - start_time))
             sys.stdout.flush()
