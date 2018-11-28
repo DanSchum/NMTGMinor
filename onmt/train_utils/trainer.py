@@ -111,7 +111,11 @@ class XETrainer(BaseTrainer):
         opt = self.opt
         model = self.model
         dicts = self.dicts
-        
+
+        # TODO: D.S: Remove afterwards
+        print('Checkpoint save started')
+        sys.stdout.flush()
+
 
         model_state_dict = self.model.state_dict()
         optim_state_dict = self.optim.state_dict()
@@ -276,7 +280,11 @@ class XETrainer(BaseTrainer):
                         valid_loss = self.eval(self.validData)
                         valid_ppl = math.exp(min(valid_loss, 100))
                         print('Validation perplexity: %g' % valid_ppl)
-                        
+
+                        # TODO: D.S: Remove afterwards
+                        print('Validation done')
+                        sys.stdout.flush()
+
                         ep = float(epoch) - 1. + ((float(i) + 1.) / nSamples)
                         
                         self.save(ep, valid_ppl, batchOrder=batchOrder, iteration=i)
