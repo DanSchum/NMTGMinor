@@ -144,6 +144,10 @@ class FP16XETrainer(XETrainer):
         num_accumulated_words = 0
         num_accumulated_sents = 0
         oom_count = 0
+
+        #TODO: D.S: delete afterwards
+        print('Train epoch started')
+        sys.stdout.flush()
         
         for i in range(iteration, nSamples): #starts at iteration and goes until samples reached.
 
@@ -157,7 +161,11 @@ class FP16XETrainer(XETrainer):
             try:
             
                 outputs = self.model(batch)
-                    
+
+                # TODO: D.S:
+                print('Forward path done')
+                sys.stdout.flush()
+
                 targets = batch[1][1:]
                 tgt_inputs = batch[1][:-1]
                 
@@ -171,7 +179,11 @@ class FP16XETrainer(XETrainer):
                 
                 loss_data, _ = self.loss_function(outputs, targets, generator=self.model.generator, 
                                                              backward=True, mask=None, normalizer=normalizer)
-                
+                # TODO: D.S: Remove afterwards
+                print('Loss calculated')
+                sys.stdout.flush()
+
+
             except RuntimeError as e:
                 if 'out of memory' in str(e):
                     oom = True
@@ -194,11 +206,14 @@ class FP16XETrainer(XETrainer):
                 normalizer = num_accumulated_words if opt.normalize_gradient else 1
                 if num_accumulated_words >= opt.batch_size_update * 0.95:
                     # Update the parameters.
-                    
+
+                    # TODO: D.S: Remove afterwards
+                    print('Update parameters')
+                    sys.stdout.flush()
+
                     # First we have to copy the grads from fp16 to fp32
                     self._get_flat_grads(out=self.fp32_params.grad)
-                    
-                    
+
                     normalizer = normalizer * self.scaler.loss_scale 
                     # rescale and clip grads
                     self.fp32_params.grad.data.div_(normalizer)
@@ -238,6 +253,11 @@ class FP16XETrainer(XETrainer):
                         num_accumulated_words = 0
                         num_accumulated_sents = 0
                         num_updates = self.optim._step
+
+                        # TODO: D.S: Remove afterwards
+                        print('Update of parameters done')
+                        sys.stdout.flush()
+
                         if opt.save_every > 0 and num_updates % opt.save_every == -1 % opt.save_every :
                             valid_loss = self.eval(self.validData)
                             valid_ppl = math.exp(min(valid_loss, 100))
@@ -319,11 +339,14 @@ class FP16XETrainer(XETrainer):
             print('Initializing model parameters')
             init_model_parameters(model, opt)
             resume=False
+            print('Init Model done')
+            sys.stdout.flush()
         
         
         valid_loss = self.eval(self.validData) #Evaluates the current new initilized model with the valid data.
         valid_ppl = math.exp(min(valid_loss, 100))
         print('Validation perplexity: %g' % valid_ppl)
+        sys.stdout.flush()
         #~ 
         self.start_time = time.time()
         

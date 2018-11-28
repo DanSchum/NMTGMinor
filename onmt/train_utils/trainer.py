@@ -93,6 +93,11 @@ class XETrainer(BaseTrainer):
         
         self.optim.set_parameters(self.model.parameters())
 
+        # TODO: D.S: Remove afterwards
+        print('XETrainer init finished')
+        sys.stdout.flush()
+
+
     def save(self, epoch, valid_ppl, batchOrder=None, iteration=-1):
         '''
         Writes current model to file
