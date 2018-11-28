@@ -13,10 +13,11 @@ import math
 import time, datetime
 import random 
 import numpy as np
+impor time
 from onmt.multiprocessing.multiprocessing_wrapper import MultiprocessingRunner
 from onmt.ModelConstructor import init_model_parameters
 from onmt.train_utils.trainer import BaseTrainer, XETrainer
-    
+
     
 
 class DynamicLossScaler:
@@ -336,10 +337,23 @@ class FP16XETrainer(XETrainer):
             #Go here for new started training
             batchOrder = None
             iteration = 0
+
+            # TODO: D.S: Just remove flush
+
             print('Initializing model parameters')
+            sys.stdout.flush()
+            start_time = time.time()
+
+
             init_model_parameters(model, opt)
             resume=False
+
+
+            end_time = time.time()
+
+            # TODO: D.S: Remove afterwards
             print('Init Model done')
+            print('Exc Time: ' + str(end_time - start_time))
             sys.stdout.flush()
         
         
