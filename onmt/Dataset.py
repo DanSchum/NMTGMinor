@@ -101,12 +101,8 @@ class Dataset(object):
         cur_batch_sizes = []
         
         def oversize_(cur_batch):
-<<<<<<< HEAD
-            
             #Check if the length of current batch cur_batch is already exceeding the max_seq_num
-=======
 
->>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
             if len(cur_batch) == self.max_seq_num:
                     return True
             
@@ -126,15 +122,13 @@ class Dataset(object):
             return False
         
         i = 0
-<<<<<<< HEAD
         #Full size contains the length of the complete source set
         while i < self.fullSize: #This loop goes through all the lines in src set
         #~ for i in range(1, self.fullSize):
 
             #Calculates the
-=======
-        while i < self.fullSize:            
->>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
+
+        while i < self.fullSize:
             sentence_length = self.tgt[i].size(0) - 1 if self.sort_by_target else self.src[i].size(0)
 
             oversized = oversize_(cur_batch)
