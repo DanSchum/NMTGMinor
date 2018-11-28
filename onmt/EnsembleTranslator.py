@@ -52,13 +52,15 @@ class EnsembleTranslator(object):
                     print("Not enough len to decode. Renewing .. ")    
                     model.decoder.renew_buffer(self.opt.max_sent_length)
             
+            if opt.fp16:
+                model = model.half()
+            
             if opt.cuda:
                 model = model.cuda()
             else:
                 model = model.cpu()
                 
-            if opt.fp16:
-                model = model.half()
+            
             
             model.eval()
             
@@ -142,18 +144,6 @@ class EnsembleTranslator(object):
             return batch.size(1)
         else:
             return batch.size(0)
-            
-    def to_variable(self, data):
-        
-        for i, t in enumerate(data):
-            if data[i] is not None:
-                if self.cuda:
-                    data[i] = Variable(data[i].cuda())
-                else:
-                    data[i] = Variable(data[i])
-            else:
-                data[i] = None
-        return data
 
     def buildData(self, srcBatch, goldBatch):
         # This needs to be the same as preprocess.py.
@@ -181,7 +171,9 @@ class EnsembleTranslator(object):
 
     def buildTargetTokens(self, pred, src, attn):
         tokens = self.tgt_dict.convertToLabels(pred, onmt.Constants.EOS)
-        tokens = tokens[:-1]  # EOS
+        if tokens[-1] == onmt.Constants.EOS_WORD:
+            tokens = tokens[:-1]  # EOS
+        length = len(pred)
         
         return tokens
 
@@ -221,7 +213,6 @@ class EnsembleTranslator(object):
             
             output, coverage = model_.decoder(tgtBatchInput, contexts[0], src)
             # output should have size time x batch x dim
-            #~ output = output.transpose(0, 1) # transpose to have time first, like RNN models
             
             
             #  (2) if a target is specified, compute the 'goldScore'
@@ -251,14 +242,13 @@ class EnsembleTranslator(object):
         decoder_hiddens = dict()
         
         for i in range(self.n_models):
-            decoder_states[i] = self.models[i].create_decoder_state(src, contexts[i], beamSize)
+            decoder_states[i] = self.models[i].create_decoder_state(src, contexts[i], src_mask, beamSize, type='old')
         
         for i in range(self.opt.max_sent_length):
             # Prepare decoder input.
             
             # input size: 1 x ( batch * beam )
-            input = torch.stack([b.getCurrentState() for b in beam
-                                 if not b.done]).t().contiguous().view(1, -1)
+            input = torch.stack([b.getCurrentState() for b in beam if not b.done]).t().contiguous().view(1, -1)
             
             """  
                 Inefficient decoding implementation
@@ -297,6 +287,7 @@ class EnsembleTranslator(object):
                     continue
                 
                 idx = batchIdx[b]
+                
                 if not beam[b].advance(wordLk.data[idx], attn.data[idx]):
                     active += [b]
                     
@@ -315,9 +306,7 @@ class EnsembleTranslator(object):
             
             for i in range(self.n_models):
                 decoder_states[i]._prune_complete_beam(activeIdx, remainingSents)
-               
-            
-            
+
             remainingSents = len(active)
             
         #  (4) package everything up
@@ -357,9 +346,12 @@ class EnsembleTranslator(object):
     def translate(self, srcBatch, goldBatch):
         #  (1) convert words to indexes
         dataset = self.buildData(srcBatch, goldBatch)
-        batch = self.to_variable(dataset.next()[0])
-        src, tgt = batch
-        batchSize = self._getBatchSize(src)
+        batch = dataset.next()[0]
+        batch.cuda()
+        # ~ batch = self.to_variable(dataset.next()[0])
+        src = batch.get('source')
+        tgt = batch.get('target_input')
+        batchSize = batch.size
 
         #  (2) translate
         pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt)
@@ -367,11 +359,14 @@ class EnsembleTranslator(object):
 
         #  (3) convert indexes to words
         predBatch = []
+        predLength = []
         for b in range(batchSize):
             predBatch.append(
                 [self.buildTargetTokens(pred[b][n], srcBatch[b], attn[b][n])
                  for n in range(self.opt.n_best)]
             )
+            
+            predLength.append([len(pred[b][n]) for n in range(self.opt.n_best)])
 
         return predBatch, predScore, predLength, goldScore, goldWords
 

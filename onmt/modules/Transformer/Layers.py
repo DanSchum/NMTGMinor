@@ -385,7 +385,7 @@ class FeedForward(nn.Module):
         
     def forward(self, input):
         
-        out = F.relu(self.fc_1(input), inplace=False)
+        out = F.relu(self.fc_1(input), inplace=True)
         out = self.dropout(out)
         out = self.fc_2(out)
         return out
@@ -414,18 +414,16 @@ class EncoderLayer(nn.Module):
         out: batch_size x len_query x d_model
     """
     
-    def __init__(self, h, d_model, p, d_ff, attn_p=0.1, version=1.0):
+    def __init__(self, h, d_model, p, d_ff, attn_p=0.1, residual_p=0.1, version=1.0):
         super(EncoderLayer, self).__init__()
         self.version = version
         
-        self.preprocess_attn = PrePostProcessing(d_model, p, sequence='n')
-        self.postprocess_attn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
-        self.preprocess_ffn = PrePostProcessing(d_model, p, sequence='n')
-        self.postprocess_ffn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
-        self.multihead = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=2)
-        #D.S: Share=2, Weightsharing just between key and value
-
-        #D.S: TODO: Activation Layers of FF
+        self.preprocess_attn = PrePostProcessing(d_model, 0.0, sequence='n')
+        self.postprocess_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
+        self.preprocess_ffn = PrePostProcessing(d_model, 0.0, sequence='n')
+        self.postprocess_ffn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
+        self.multihead = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=1)
+        
         if onmt.Constants.activation_layer == 'linear_relu_linear':
             ff_p = p
             feedforward = FeedForward(d_model, d_ff, ff_p,static=onmt.Constants.static)
@@ -443,8 +441,7 @@ class EncoderLayer(nn.Module):
         """ Feed forward layer 
             layernorm > ffn > dropout > residual
         """
-        out = self.feedforward(self.preprocess_ffn(input), 
-                               mask=pad_mask)
+        out = self.feedforward(self.preprocess_ffn(input))
         input = self.postprocess_ffn(out, input)
         
         return input
@@ -479,18 +476,18 @@ class DecoderLayer(nn.Module):
         
     """    
     
-    def __init__(self, h, d_model, p, d_ff, attn_p=0.1, version=1.0):
+    def __init__(self, h, d_model, p, d_ff, attn_p=0.1, residual_p=0.1, version=1.0):
         super(DecoderLayer, self).__init__()
         self.version = version
         
         self.preprocess_attn = PrePostProcessing(d_model, p, sequence='n')
-        self.postprocess_attn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
+        self.postprocess_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
         
         self.preprocess_src_attn = PrePostProcessing(d_model, p, sequence='n')
-        self.postprocess_src_attn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
+        self.postprocess_src_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
         
         self.preprocess_ffn = PrePostProcessing(d_model, p, sequence='n')
-        self.postprocess_ffn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
+        self.postprocess_ffn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
         
         
         self.multihead_tgt = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=1)
