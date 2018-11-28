@@ -364,7 +364,7 @@ class FP16XETrainer(XETrainer):
         valid_ppl = math.exp(min(valid_loss, 100))
         print('Validation perplexity: %g' % valid_ppl)
         sys.stdout.flush()
-        #~ 
+
         self.start_time = time.time()
         
         for epoch in range(opt.start_epoch, opt.start_epoch + opt.epochs):

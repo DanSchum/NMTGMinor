@@ -208,7 +208,11 @@ class XETrainer(BaseTrainer):
             try:
             
                 outputs = self.model(batch) #self.model(batch) executes the forward path of our model
-                    
+                # TODO: D.S: Just remove flush
+                print('Forward path done')
+                sys.stdout.flush()
+
+
                 targets = batch[1][1:]
                 tgt_inputs = batch[1][:-1]
                 
@@ -222,7 +226,11 @@ class XETrainer(BaseTrainer):
                 
                 loss_data, grad_outputs = self.loss_function(outputs, targets, generator=self.model.generator, 
                                                              backward=True, mask=tgt_mask)
-                
+
+                # TODO: D.S: Just remove flush
+                print('Loss calculated')
+                sys.stdout.flush()
+
                 #~ outputs.backward(grad_outputs)
                 
             except RuntimeError as e:
@@ -258,6 +266,12 @@ class XETrainer(BaseTrainer):
                     num_accumulated_words = 0
                     num_accumulated_sents = 0
                     num_updates = self.optim._step
+
+                    # TODO: D.S: Just remove flush
+                    print('Model parameter update done')
+                    sys.stdout.flush()
+
+
                     if opt.save_every > 0 and num_updates % opt.save_every == -1 % opt.save_every :
                         valid_loss = self.eval(self.validData)
                         valid_ppl = math.exp(min(valid_loss, 100))
@@ -335,7 +349,9 @@ class XETrainer(BaseTrainer):
         else:
             batchOrder = None
             iteration = 0
+            # TODO: D.S: Just remove flush
             print('Initializing model parameters')
+            sys.stdout.flush()
             init_model_parameters(model, opt)
             resume=False
         
@@ -343,6 +359,7 @@ class XETrainer(BaseTrainer):
         valid_loss = self.eval(self.validData)
         valid_ppl = math.exp(min(valid_loss, 100))
         print('Validation perplexity: %g' % valid_ppl)
+        sys.stdout.flush()
         
         self.start_time = time.time()
         
