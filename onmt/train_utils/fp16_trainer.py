@@ -13,7 +13,7 @@ import math
 import time, datetime
 import random 
 import numpy as np
-impor time
+import time
 from onmt.multiprocessing.multiprocessing_wrapper import MultiprocessingRunner
 from onmt.ModelConstructor import init_model_parameters
 from onmt.train_utils.trainer import BaseTrainer, XETrainer
