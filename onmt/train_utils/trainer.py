@@ -124,6 +124,7 @@ class XETrainer(BaseTrainer):
         
         file_name = '%s_ppl_%.2f_e%.2f.pt' % (opt.save_model, valid_ppl, epoch)
         print('Writing to %s' % file_name)
+        sys.stdout.flush()
         torch.save(checkpoint, file_name)
         
         # check te save directory here
