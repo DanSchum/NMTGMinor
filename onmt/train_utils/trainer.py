@@ -147,23 +147,23 @@ class XETrainer(BaseTrainer):
         """ New semantics of PyTorch: save space by not creating gradients """
         with torch.no_grad():
             for i in range(len(data)):
-                    
-                samples = data.next()
-                
-                batch = self.to_variable(samples[0])
-                
+                batch = data.next()[0]
+                batch.cuda()
+
                 """ outputs can be either 
                         hidden states from decoder or
                         prob distribution from decoder generator
                 """
                 outputs = self.model(batch)
-                targets = batch[1][1:]
-                
-                loss_data, grad_outputs = self.loss_function(outputs, targets, generator=self.model.generator, backward=False)
-                
-#~ 
+                # ~ targets = batch[1][1:]
+                targets = batch.get('target_output')
+
+                loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False)
+
+                loss_data = loss_output['nll']
+                # ~
                 total_loss += loss_data
-                total_words += targets.data.ne(onmt.Constants.PAD).sum().item()
+                total_words += batch.tgt_size
 
         self.model.train() #D.S: TODO: Why is this done here?
         return total_loss / total_words
