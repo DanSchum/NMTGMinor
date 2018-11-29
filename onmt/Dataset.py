@@ -2,6 +2,7 @@ from __future__ import division
 
 import math
 import torch
+import sys
 from torch.autograd import Variable
 
 import onmt
@@ -73,6 +74,11 @@ class Dataset(object):
         self.cuda = (len(gpus) > 0)
         self.fullSize = len(self.src)
         self.n_gpu = len(gpus)
+
+        #D.S: Added prints
+        print('Dataset cuda activated?: ' + str(self.cuda))
+        print('Number of gpus: ' + str(self.n_gpu))
+        sys.stdout.flush()
 
         self.batchSize = batchSize
         
