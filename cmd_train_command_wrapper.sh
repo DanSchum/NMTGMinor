@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh bash
 
 source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6
 
