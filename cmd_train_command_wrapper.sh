@@ -16,3 +16,7 @@ python3.6 train.py \
 #-batch_size_words 4096 \
 #-batch_size_sents 64 \
 #-batch_size_update 4096
+
+#srun -p lowGPU -w i13hpc51 nvidia-smi
+
+#srun -c 1 --mem=10000 -t 5-00 -p lowGPU -w i13hpc51 --gres=gpu:1 cmd_train_command_wrapper.sh logs/manualLog.log
