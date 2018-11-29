@@ -101,16 +101,18 @@ class XETrainer(BaseTrainer):
         self.optim = onmt.Optim(opt)
         
         if self.cuda:
-           torch.cuda.set_device(self.opt.gpus[0])
-           torch.manual_seed(self.opt.seed)
-           self.loss_function = self.loss_function.cuda()
-           self.model = self.model.cuda()
+            if not torch.cuda.is_available():
+                print('Warning cuda is not available on this machine!')
+            torch.cuda.set_device(self.opt.gpus[0])
+            torch.manual_seed(self.opt.seed)
+            self.loss_function = self.loss_function.cuda()
+            self.model = self.model.cuda()
         
         if set_param:
             self.optim.set_parameters(self.model.parameters())
 
     def save(self, epoch, valid_ppl, batchOrder=None, iteration=-1):
-        
+
         opt = self.opt
         model = self.model
         dicts = self.dicts

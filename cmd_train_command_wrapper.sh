@@ -7,6 +7,7 @@
 -layers 6 \
 -log_interval 1 \
 -save_every 1 \
+-gpus 0 \
 -save_model $1
 #-batch_size_words 4096 \
 #-batch_size_sents 64 \
