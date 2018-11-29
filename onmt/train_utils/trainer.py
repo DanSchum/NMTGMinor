@@ -298,6 +298,7 @@ class XETrainer(BaseTrainer):
                            report_src_words/(time.time()-start),
                            report_tgt_words/(time.time()-start),
                            str(datetime.timedelta(seconds=int(time.time() - self.start_time)))))
+                    sys.stdout.flush()
 
                     report_loss, report_tgt_words = 0, 0
                     report_src_words = 0
@@ -346,9 +347,9 @@ class XETrainer(BaseTrainer):
             resume=False
         
         
-        valid_loss = self.eval(self.validData)
-        valid_ppl = math.exp(min(valid_loss, 100))
-        print('Validation perplexity: %g' % valid_ppl)
+        #valid_loss = self.eval(self.validData)
+        #valid_ppl = math.exp(min(valid_loss, 100))
+        #print('Validation perplexity: %g' % valid_ppl)
         
         self.start_time = time.time()
         
