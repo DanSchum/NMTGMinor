@@ -9,12 +9,12 @@ python3.6 train.py \
 -model transformer \
 -learning_rate 0.001 \
 -layers 6 \
--log_interval 1 \
--save_every 1 \
+-log_interval 10 \
+-save_every 100 \
 -gpus 0 \
+-batch_size_words 1024 \
+-batch_size_sents 1048576 \
 -save_model $1
-#-batch_size_words 4096 \
-#-batch_size_sents 64 \
 #-batch_size_update 4096
 
 #srun -p lowGPU -w i13hpc51 nvidia-smi
