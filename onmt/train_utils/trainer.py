@@ -102,10 +102,10 @@ class XETrainer(BaseTrainer):
         
         if self.cuda:
             print('Is cuda on current device available?: ' + str(torch.cuda.is_available()))
-            if torch.cuda.is_available():
+            if torch.cuda.is_available() == False:
                 print('Warning cuda is not available on this machine!')
             else:
-                print('Number of available GPUs: ' + str(torch.cuda.device_count()))
+                print('Number of available GPUs: ' + str(torch.cuda.device_count()  ))
             torch.cuda.set_device(self.opt.gpus[0])
             torch.manual_seed(self.opt.seed)
             self.loss_function = self.loss_function.cuda()
