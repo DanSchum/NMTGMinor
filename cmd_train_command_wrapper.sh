@@ -1,5 +1,8 @@
 #!/bin/sh
-/project/iwslt2014c/MT/user/dschumacher/anaconda/envs/NMTGMinor_env_python3_6/bin/python3.6 train.py \
+
+source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6
+
+python3.6 train.py \
 -data /project/student_projects2/dschumacher/preprocessing/after_preprocessing/papers_arxiv_own/category_computer_science/transformer_preproc_2018_11_29/transformer_moses_subword_nmt_2018_11_29.train.pt \
 -data_format raw \
 -model transformer \
