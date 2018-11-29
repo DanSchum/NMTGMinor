@@ -9,8 +9,8 @@ python3.6 train.py \
 -model transformer \
 -learning_rate 0.001 \
 -layers 6 \
--log_interval 10 \
--save_every 100 \
+-log_interval 500 \
+-save_every 1000 \
 -gpus 0 \
 -batch_size_words 1024 \
 -batch_size_sents 1048576 \
