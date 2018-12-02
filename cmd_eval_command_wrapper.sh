@@ -57,6 +57,5 @@ python3.6 translate.py \
 -gpu 0 \
 -replace_unk \
 -tgt $3 \
--verbose \
 -alpha 0.6 #Length Penalty coefficient (larger alpha results in longer translations)
 #-batch_size 1048576 \
