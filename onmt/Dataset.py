@@ -191,6 +191,7 @@ class Dataset(object):
             tgtData = [self.tgt[i] for i in batch]
         else:
             tgtData = None
+            print('Tgt data not found.')
             
         batch = Batch(srcData, tgt_data=tgtData, src_align_right=False, tgt_align_right=False)
         

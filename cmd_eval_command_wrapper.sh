@@ -2,8 +2,9 @@
 
 #Parameter of Script
 # $1: (First Parameter) Model which should be used for translation/ evaluation
-# $2: (Second Parameter) Validation dataset
-# $3: (Third Parameter) Output Path, where the output should be stored. (!!!No ending / at path!!!)
+# $2: (Second Parameter) Validation dataset Source
+# $3: (Third Parameter) Validation dataset Target
+# $4: (Fourth Parameter) Output Path, where the output should be stored. (!!!No ending / at path!!!)
 
 
 if [ ! -f "$1" ]; then
@@ -12,12 +13,18 @@ if [ ! -f "$1" ]; then
 fi
 
 if [ ! -f "$2" ]; then
-  echo "Validation dataset not existing"
+  echo "Validation Source dataset not existing"
   exit 1
 fi
 
 
-if [ ! -d "$3" ]; then
+if [ ! -f "$3" ]; then
+  echo "Validation target dataset not existing"
+  exit 1
+fi
+
+
+if [ ! -d "$4" ]; then
   echo "Output path not found"
   exit 1
 fi
@@ -29,7 +36,7 @@ timestamp() {
 
 # start training
 timestampValue=$(timestamp)
-outputDirectory=$3"/eval_"$timestampValue"/"
+outputDirectory=$4"/eval_"$timestampValue"/"
 
 
 if [ ! -d "$outputDirectory" ]; then
@@ -49,5 +56,7 @@ python3.6 translate.py \
 -beam_size 4 \
 -gpu 0 \
 -batch_size 1048576 \
+-replace_unk \
+-tgt $3 \
 -alpha 0.6 #Length Penalty coefficient (larger alpha results in longer translations)
 
