@@ -32,4 +32,4 @@ timestamp() {
 timestampValue=$(timestamp)
 outputFilename="logs/outputEvaluation_"$timestampValue".log"
 #echo $outputFilename
-sbatch -c 1 --mem=10000 -t 1-00 -p lowGPU -w i13hpc51 -o $outputFilename -e $outputFilename cmd_eval_command_wrapper.sh $1 $2 $3
+sbatch -c 1 --mem=10000 -t 1-00 -p lowGPU -w i13hpc51 --gres=gpu:1 -o $outputFilename -e $outputFilename cmd_eval_command_wrapper.sh $1 $2 $3

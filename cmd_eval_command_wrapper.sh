@@ -38,12 +38,16 @@ fi
 
 echo $1
 
+source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_80
+
 #Parameter of script is model
 #Hyperparameters are set like mentioned in Wiki Article Paper: https://arxiv.org/pdf/1801.10198.pdf
-/home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6/bin/python3.6 translate.py \
+python3.6 translate.py \
 -model $1 \
 -src $2 \
 -output $outputDirectory"evalOutput.txt" \
 -beam_size 4 \
+-gpu 0 \
+-batch_size 1048576 \
 -alpha 0.6 #Length Penalty coefficient (larger alpha results in longer translations)
 
