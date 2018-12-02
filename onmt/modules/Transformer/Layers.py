@@ -626,7 +626,8 @@ class PositionalEncoding(nn.Module):
     def forward(self, word_emb, t=None):
 
 
-        print("Type of word_emb:" + str(type(word_emb)))
+        #print("Type of word_emb:" + str(type(word_emb)))
+        word_emb.cuda()
 
         len_seq = t if t else word_emb.size(1)
         
