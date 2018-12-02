@@ -55,8 +55,7 @@ python3.6 translate.py \
 -output $outputDirectory"evalOutput.txt" \
 -beam_size 4 \
 -gpu 0 \
--batch_size 1048576 \
 -replace_unk \
 -tgt $3 \
 -alpha 0.6 #Length Penalty coefficient (larger alpha results in longer translations)
-
+#-batch_size 1048576 \
