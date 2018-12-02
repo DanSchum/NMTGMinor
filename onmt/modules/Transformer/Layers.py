@@ -635,7 +635,7 @@ class PositionalEncoding(nn.Module):
             self.renew(len_seq)
         
         if word_emb.size(1) == len_seq:
-            out = word_emb + Variable(self.pos_emb[:len_seq, :], requires_grad=False)
+            out = word_emb + Variable(self.pos_emb[:len_seq, :].cuda(), requires_grad=False)
         else:
             # out = word_emb + Variable(self.pos_emb[:len_seq, :][-1, :], requires_grad=False)
             time_emb = Variable(self.pos_emb[len_seq-1, :].cuda(), requires_grad=False) # 1 x dim
