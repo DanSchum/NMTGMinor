@@ -1,10 +1,41 @@
 #!/usr/bin/env bash
 
+# $1 : Input of *.train.pt file as training input
+# $2: Output Path, where models should be stored.
+
+# Define a timestamp function
+timestamp() {
+  date +"%Y_%m_%d_%H_%M_%S"
+}
+
+if [ ! -f "$1" ]; then
+  echo "Input File (*.train.pt) not found"
+  exit 1
+fi
+
+
+if [ ! -d "$2" ]; then
+  echo "Output path not found"
+  exit 1
+fi
+
+
+outputPath=$2"/Training_output_"$timestampValue
+mkdir $outputPath
+outputModel=$2"/Training_output_"$timestampValue"/model_"
+
+
+
+outputReadme=$outputPath"/README.txt"
+touch $outputReadme
+echo "Training Input File: "$1 >> $outputReadme
+echo "Output Path: "$outputPath >> $outputReadme
+
 
 source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_80
 
 python3.6 train.py \
--data /project/student_projects2/dschumacher/preprocessing/after_preprocessing/Gigaword/transformer_2018_11_29/transformer_moses_subword_nmt_2018_11_29.train.pt \
+-data $1 \
 -data_format raw \
 -model transformer \
 -learning_rate 0.001 \
@@ -14,7 +45,7 @@ python3.6 train.py \
 -gpus 0 \
 -batch_size_words 512 \
 -batch_size_sents 2097152 \
--save_model $1
+-save_model $outputModel
 #-batch_size_update 4096
 
 #srun -p lowGPU -w i13hpc51 nvidia-smi

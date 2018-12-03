@@ -45,11 +45,12 @@ fi
 echo $1
 
 #Write Hyperparameter to README.txt file
-touch README.txt
-echo "Model: "$1 > README.txt
-echo "Source Dataset for Eval: "$2 > README.txt
-echo "Target Dataset for Eval: "$3 > README.txt
-echo "Output path of results: "$4 > README.txt
+outputReadme=$outputDirectory"README.txt"
+touch $outputReadme
+echo "Model: "$1 >> $outputReadme
+echo "Source Dataset for Eval: "$2 >> $outputReadme
+echo "Target Dataset for Eval: "$3 >> $outputReadme
+echo "Output path of results: "$4 >> $outputReadme
 
 
 source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_80
