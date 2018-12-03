@@ -154,9 +154,9 @@ def main():
             else:
                 raise NotImplementedError("Input type unknown")
 
-            if len(srcBatch) < opt.batch_size:
-                print('srcBatch < opt.batch_size')
-                continue
+            #if len(srcBatch) < opt.batch_size:
+            #    print('srcBatch < opt.batch_size')
+            #    continue
         else:
             # at the end of file, check last batch
             if len(srcBatch) == 0:

@@ -19,7 +19,7 @@ if [ ! -d "$2" ]; then
   exit 1
 fi
 
-
+timestampValue=$(timestamp)
 outputPath=$2"/Training_output_"$timestampValue
 mkdir $outputPath
 outputModel=$2"/Training_output_"$timestampValue"/model_"
