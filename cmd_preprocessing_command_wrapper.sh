@@ -33,4 +33,4 @@ echo "Target Sequence Length: "$tgt_seq_length >> $logFile
 
 trainingOutput="/home/dschumacher/dschumacher_working_dir_sp2/models/cnnDailyMail/"
 
-./start_training.sh $outputPath$nameOutputModel".train.pt" $trainingOutput
+#./start_training.sh $outputPath$nameOutputModel".train.pt" $trainingOutput
