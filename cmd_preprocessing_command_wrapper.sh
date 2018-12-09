@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
-outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_09/"
+outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_09_2th/"
 nameOutputModel="transformer_moses_subword_nmt_2018_12_09"
-sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_09/splits/"
+sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_09_2th/splits/"
 
 trainSourceFilename="training_source_bpe_articles.txt"
 trainTargetFilename="training_target_bpe_abstracts.txt"
 validSourceFileName="validation_source_bpe_articles.txt"
 validTargetFileName="validation_target_bpe_abstracts.txt"
 
-src_seq_length=16384
-tgt_seq_length=8192
+src_seq_length=6144
+tgt_seq_length=2048
 
 logFile=$outputPath"README.txt"
 touch $logFile
