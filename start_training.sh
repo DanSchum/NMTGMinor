@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# $1 : Input of *.train.pt file as training input
+# $1 : Input of *.train.pt file as training input (e.g. /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_09/transformer_moses_subword_nmt_2018_12_09)
 # $2: Output Path, where models should be stored.
 
 # Define a timestamp function

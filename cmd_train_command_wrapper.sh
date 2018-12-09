@@ -40,11 +40,11 @@ python3.6 train.py \
 -model transformer \
 -learning_rate 0.001 \
 -layers 6 \
--log_interval 500 \
--save_every 1000 \
+-log_interval 1000 \
+-save_every 2000 \
 -gpus 0 \
--batch_size_words 512 \
--batch_size_sents 2097152 \
+-batch_size_words 16384 \
+-batch_size_sents 1048576 \
 -save_model $outputModel
 #-batch_size_update 4096
 
