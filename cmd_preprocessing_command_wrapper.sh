@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 
-outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/papers_arxiv_own/category_physics/transformer_2018_12_03/"
-nameOutputModel="transformer_moses_subword_nmt_2018_12_03"
-sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/papers_arxiv_own/category_physics/subword_nmt_2018_11_27/splits/"
+outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_09/"
+nameOutputModel="transformer_moses_subword_nmt_2018_12_09"
+sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_09/splits/"
 
-trainSourceFilename="training_source_bpe_source_summaries.txt"
-trainTargetFilename="training_target_bpe_target_titles.txt"
-validSourceFileName="validation_source_bpe_source_summaries.txt"
-validTargetFileName="validation_target_bpe_target_titles.txt"
+trainSourceFilename="training_source_bpe_articles.txt"
+trainTargetFilename="training_target_bpe_abstracts.txt"
+validSourceFileName="validation_source_bpe_articles.txt"
+validTargetFileName="validation_target_bpe_abstracts.txt"
 
-src_seq_length=512
-tgt_seq_length=256
+src_seq_length=16384
+tgt_seq_length=8192
 
 logFile=$outputPath"README.txt"
 touch $logFile
@@ -31,6 +31,6 @@ echo "Target Sequence Length: "$tgt_seq_length >> $logFile
 -tgt_seq_length $tgt_seq_length
 
 
-trainingOutput="/home/dschumacher/dschumacher_working_dir_sp2/models/papers_arxiv_own/category_physics/"
+trainingOutput="/home/dschumacher/dschumacher_working_dir_sp2/models/cnnDailyMail/"
 
 ./start_training.sh $outputPath$nameOutputModel".train.pt" $trainingOutput
