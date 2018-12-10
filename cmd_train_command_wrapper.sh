@@ -43,8 +43,8 @@ python3.6 train.py \
 -log_interval 1000 \
 -save_every 2000 \
 -gpus 0 \
--batch_size_words 128 \
--batch_size_sents 128 \
+-batch_size_words 1 \
+-batch_size_sents 1 \
 -max_generator_batches 4 \
 -save_model $outputModel
 #-batch_size_update 4096
