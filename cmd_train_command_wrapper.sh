@@ -39,13 +39,13 @@ python3.6 train.py \
 -data_format raw \
 -model transformer \
 -learning_rate 0.001 \
--layers 2 \
+-layers 6 \
 -log_interval 1000 \
 -save_every 2000 \
 -gpus 0 \
--batch_size_words 1 \
--batch_size_sents 1 \
--max_generator_batches 4 \
+-batch_size_words 16384 \
+-batch_size_sents 262144 \
+-max_generator_batches 32 \
 -save_model $outputModel
 #-batch_size_update 4096
 
