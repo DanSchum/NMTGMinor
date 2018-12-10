@@ -2,12 +2,12 @@
 
 outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_10/"
 nameOutputModel="transformer_moses_subword_nmt_2018_12_10"
-sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_09_2th/splits/"
+sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_10/splits"
 
-trainSourceFilename="training_source_bpe_articles.txt"
-trainTargetFilename="training_target_bpe_abstracts.txt"
-validSourceFileName="validation_source_bpe_articles.txt"
-validTargetFileName="validation_target_bpe_abstracts.txt"
+trainSourceFilename="training_source_cleaned_bpe_articles_copy.txt"
+trainTargetFilename="training_target_cleaned_bpe_abstracts_copy.txt"
+validSourceFileName="validation_source_cleaned_bpe_articles_copy.txt"
+validTargetFileName="validation_target_cleaned_bpe_abstracts_copy.txt"
 
 src_seq_length=4096
 tgt_seq_length=1536
