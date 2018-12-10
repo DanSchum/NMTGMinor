@@ -23,4 +23,4 @@ fi
 timestampValue=$(timestamp)
 outputFilename="logs/outputTraining_"$timestampValue".log"
 
-sbatch -t 3-00 -p lowGPU -w i13hpc58 --gres=gpu:1 -o $outputFilename -e $outputFilename cmd_train_command_wrapper.sh $1 $2
+sbatch -t 3-00 -w i13hpc58 --gres=gpu:1 -o $outputFilename -e $outputFilename cmd_train_command_wrapper.sh $1 $2
