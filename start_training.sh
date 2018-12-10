@@ -2,6 +2,8 @@
 
 # $1 : Input of *.train.pt file as training input (e.g. /home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_09/transformer_moses_subword_nmt_2018_12_09)
 # $2: Output Path, where models should be stored.
+# $3: Output Path, where models should be stored.
+
 
 # Define a timestamp function
 timestamp() {
@@ -23,4 +25,9 @@ fi
 timestampValue=$(timestamp)
 outputFilename="logs/outputTraining_"$timestampValue".log"
 
-sbatch -t 3-00 -w i13hpc58 --gres=gpu:1 -o $outputFilename -e $outputFilename cmd_train_command_wrapper.sh $1 $2
+
+if [$3 == "local"]; then
+    sbatch -t 3-00 -p lowGPU -w i13hpc51 --gres=gpu:1 -o $outputFilename -e $outputFilename cmd_train_command_wrapper.sh $1 $2
+else
+    nohup ./cmd_train_command_wrapper $1 $2 > $outputFilename &
+fi

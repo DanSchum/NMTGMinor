@@ -42,7 +42,7 @@ python3.6 train.py \
 -layers 2 \
 -log_interval 1000 \
 -save_every 2000 \
--gpus 0 \
+-gpus 1 \
 -batch_size_words 1 \
 -batch_size_sents 1 \
 -batch_size_update 1 \
