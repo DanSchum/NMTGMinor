@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_09_2th/"
-nameOutputModel="transformer_moses_subword_nmt_2018_12_09"
-sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_09_2   th/splits/"
+outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_10/"
+nameOutputModel="transformer_moses_subword_nmt_2018_12_10"
+sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_09_2th/splits/"
 
 trainSourceFilename="training_source_bpe_articles.txt"
 trainTargetFilename="training_target_bpe_abstracts.txt"
