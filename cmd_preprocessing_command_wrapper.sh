@@ -19,7 +19,10 @@ echo "Target Path: "$outputPath >> $logFile
 echo "Source Sequence Length: "$src_seq_length>> $logFile
 echo "Target Sequence Length: "$tgt_seq_length >> $logFile
 
-/home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6/bin/python3.6 preprocess.py \
+
+source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_90
+
+python3.6 preprocess.py \
 -train_src $sourcePath$trainSourceFilename \
 -train_tgt $sourcePath$trainTargetFilename \
 -valid_src $sourcePath$validSourceFileName \

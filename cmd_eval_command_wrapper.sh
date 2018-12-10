@@ -53,7 +53,7 @@ echo "Target Dataset for Eval: "$3 >> $outputReadme
 echo "Output path of results: "$4 >> $outputReadme
 
 
-source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_80
+source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_90
 
 #Parameter of script is model
 #Hyperparameters are set like mentioned in Wiki Article Paper: https://arxiv.org/pdf/1801.10198.pdf

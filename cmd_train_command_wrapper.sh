@@ -32,7 +32,7 @@ echo "Training Input File: "$1 >> $outputReadme
 echo "Output Path: "$outputPath >> $outputReadme
 
 
-source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_80
+source /home/dschumacher/dschumacher_working_dir/anaconda/bin/activate /home/dschumacher/dschumacher_working_dir/anaconda/envs/NMTGMinor_env_python3_6_cuda_90
 
 python3.6 train.py \
 -data $1 \
