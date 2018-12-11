@@ -26,11 +26,9 @@ timestampValue=$(timestamp)
 outputFilename="logs/outputTraining_"$timestampValue".log"
 
 
+if [ $3='local' ]; then
+    nohup ./cmd_train_command_wrapper $1 $2 > $outputFilename &
+else
+    sbatch -t 3-00 -p lowGPU -w i13hpc51 --gres=gpu:1 -o $outputFilename -e $outputFilename cmd_train_command_wrapper.sh $1 $2
 
-#if ["$3"=="local"]; then
-nohup ./cmd_train_command_wrapper.sh $1 $2 > $outputFilename &
-
-#else
-#    sbatch -t 3-00 -p lowGPU -w i13hpc51 --gres=gpu:1 -o $outputFilename -e $outputFilename cmd_train_command_wrapper.sh $1 $2
-
-#fi
+fi
