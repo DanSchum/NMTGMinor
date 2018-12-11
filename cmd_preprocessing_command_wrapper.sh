@@ -10,7 +10,7 @@ validSourceFileName="validation_source_bpe_articles.txt"
 validTargetFileName="validation_target_bpe_abstracts.txt"
 
 src_seq_length=3072
-tgt_seq_length=1000
+tgt_seq_length=800
 
 logFile=$outputPath"README.txt"
 touch $logFile
