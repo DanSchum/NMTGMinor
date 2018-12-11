@@ -2,7 +2,7 @@
 
 outputPath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/transformer_preproc_2018_12_10/"
 nameOutputModel="transformer_moses_subword_nmt_2018_12_10"
-sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_10/splits"
+sourcePath="/home/dschumacher/dschumacher_working_dir/preprocessing/after_preprocessing/cnnDailyMail/subword_nmt_2018_12_10/splits/"
 
 trainSourceFilename="training_source_cleaned_bpe_articles_copy.txt"
 trainTargetFilename="training_target_cleaned_bpe_abstracts_copy.txt"
