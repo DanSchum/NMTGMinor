@@ -9,8 +9,8 @@ trainTargetFilename="training_target_cleaned_bpe_abstracts_copy.txt"
 validSourceFileName="validation_source_cleaned_bpe_articles_copy.txt"
 validTargetFileName="validation_target_cleaned_bpe_abstracts_copy.txt"
 
-src_seq_length=4096
-tgt_seq_length=1023
+src_seq_length=3072
+tgt_seq_length=1000
 
 logFile=$outputPath"README.txt"
 touch $logFile
