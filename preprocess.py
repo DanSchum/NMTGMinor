@@ -68,6 +68,7 @@ parser.add_argument('-seed',       type=int, default=3435,
                     help="Random seed")
 
 parser.add_argument('-lower', action='store_true', help='lowercase data')
+parser.add_argument('-remove_duplicate', action='store_true', help='remove duplicated sequences')
 parser.add_argument('-sort_by_target', action='store_true', help='lowercase data')
 parser.add_argument('-join_vocab', action='store_true', help='Using one dictionary for both source and target')
 
@@ -83,8 +84,7 @@ def makeJoinVocabulary(filenames, size, input_type="word"):
     vocab = onmt.Dict([onmt.Constants.PAD_WORD, onmt.Constants.UNK_WORD,
                        onmt.Constants.BOS_WORD, onmt.Constants.EOS_WORD],
                       lower=opt.lower)
-
-
+    
     for filename in filenames:
         print("Reading file %s ... " % filename)
         with open(filename) as f:
@@ -176,7 +176,7 @@ def saveVocabulary(name, vocab, file):
     vocab.writeFile(file)
 
 
-def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_length=64, sort_by_target=False, input_type='word'):
+def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_length=64, sort_by_target=False, input_type='word', remove_duplicate=False):
     '''
 
 
@@ -193,6 +193,7 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_le
     src, tgt = [], []
     sizes = []
     count, ignored = 0, 0
+    n_duplicate = 0
 
     print('Processing %s & %s ...' % (srcFile, tgtFile))
     srcF = open(srcFile)
@@ -215,6 +216,12 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_le
         tline = tline.strip()
 
         # source and/or target are empty
+        if remove_duplicate:
+            if sline == tline:
+                n_duplicate += 1
+                # ~ print('WARNING: ignoring a duplicated pair ('+str(count+1)+')')
+                continue
+            
         if sline == "" or tline == "":
             print('WARNING: ignoring an empty line ('+str(count+1)+')')
             continue
@@ -257,7 +264,9 @@ def makeData(srcFile, tgtFile, srcDicts, tgtDicts, max_src_length=64, max_tgt_le
 
         if count % opt.report_every == 0:
             print('... %d sentences prepared' % count)
-
+    
+    if remove_duplicate:
+        print(' ... %d sentences removed for duplication' % n_duplicate)
     srcF.close()
     tgtF.close()
 
@@ -305,10 +314,11 @@ def main():
     #Inputs Source and Target Data (Training), Source and Target Vocalulary, and Hyperparameter
     train['src'], train['tgt'] = makeData(opt.train_src, opt.train_tgt,
                                           dicts['src'], dicts['tgt'],
-                                          max_src_length=opt.src_seq_length, #Maximum Source sequence length
-                                          max_tgt_length=opt.tgt_seq_length, #Maximum Target Sequence length
-                                          sort_by_target=opt.sort_by_target, #Sort?
-                                          input_type=opt.input_type) #Raw or bin
+                                          max_src_length=opt.src_seq_length,
+                                          max_tgt_length=opt.tgt_seq_length, 
+                                          sort_by_target=opt.sort_by_target,
+                                          input_type=opt.input_type,
+                                          remove_duplicate=opt.remove_duplicate)
 
     print('Preparing validation ...')
    

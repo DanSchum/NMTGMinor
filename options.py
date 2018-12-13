@@ -55,7 +55,9 @@ def make_parser(parser):
     parser.add_argument('-attn_dropout', type=float, default=0.1,
                         help='Dropout probability; applied on multi-head attention.') #D.S: Std from t2t is 0.0 (v1) and 0.1 (v2)
     parser.add_argument('-emb_dropout', type=float, default=0.1,
-                        help='Dropout probability; applied on top of embedding.')    #D.S: TODO: Same as Relu Dropout??
+                        help='Dropout probability; applied on top of embedding.')    
+    parser.add_argument('-residual_dropout', type=float, default=0.2,
+                        help='Dropout probability; applied on residual connection.')    
     parser.add_argument('-weight_norm', action='store_true',
                       help='Apply weight normalization on linear modules') #D.S: Why not?
     parser.add_argument('-layer_norm', default='fast',

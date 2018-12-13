@@ -31,7 +31,6 @@ class BaseTrainer(object):
         self.start_time = 0
         
         
-        
     def run(self, *args,**kwargs):
         
         raise NotImplementedError    
@@ -40,17 +39,6 @@ class BaseTrainer(object):
         
         raise NotImplementedError
         
-    def to_variable(self, data):
-        
-        for i, t in enumerate(data):
-            if self.cuda:
-                data[i] = Variable(data[i].cuda())
-            else:
-                data[i] = Variable(data[i])
-
-        return data
-            
-
     def _get_grads(self):
         grads = []
         for name, p in self.model.named_parameters():
@@ -75,47 +63,63 @@ class BaseTrainer(object):
             out[offset:offset+numel].copy_(g.view(-1))
             offset += numel
         return out[:offset]
+        
+    def reset_state(self):
+        
+        from onmt.modules.StaticDropout import StaticDropout
+        def reset_state(m):
+            if type(m) == StaticDropout:
+                m.reset_state()
+                
+        self.model.apply(reset_state)
+        
+    def _get_grad_norm(self, module):
+        
+        grads = []
+        
+        total_norm = 0
+        
+        for name, p in module.named_parameters():
+            if not p.requires_grad:
+                continue
+            if p.grad is None:
+                raise RuntimeError('Model parameter did not receive gradient: ' + name + '. '
+                                   'Use the param in the forward pass or set requires_grad=False.' +
+                                   ' If you are using Stochastic model + fp16 - try to increase the number of minibatches' +
+                                   ' each update to avoid uninitialized gradients.' )
+            # ~ grads.append(p.grad.data)
+            total_norm += p.grad.data.norm(2).item()
+            
+        total_norm = total_norm ** 0.5 
+        return total_norm
 
 
 class XETrainer(BaseTrainer):
 
-    def __init__(self, model, loss_function, trainData, validData, dicts, opt):
+    def __init__(self, model, loss_function, trainData, validData, dicts, opt, set_param=True):
         super().__init__(model, loss_function, trainData, validData, dicts, opt)
         self.optim = onmt.Optim(opt)
         
         if self.cuda:
-            if not torch.cuda.is_available():
+            print('Is cuda on current device available?: ' + str(torch.cuda.is_available()))
+            if torch.cuda.is_available() == False:
                 print('Warning cuda is not available on this machine!')
+            else:
+                print('Number of available GPUs: ' + str(torch.cuda.device_count()))
             torch.cuda.set_device(self.opt.gpus[0])
             torch.manual_seed(self.opt.seed)
             self.loss_function = self.loss_function.cuda()
             self.model = self.model.cuda()
         
-        self.optim.set_parameters(self.model.parameters())
-
-        # TODO: D.S: Remove afterwards
-        print('XETrainer init finished')
-        sys.stdout.flush()
-
+        if set_param:
+            self.optim.set_parameters(self.model.parameters())
 
     def save(self, epoch, valid_ppl, batchOrder=None, iteration=-1):
-        '''
-        Writes current model to file
 
-        :param epoch:
-        :param valid_ppl:
-        :param batchOrder:
-        :param iteration:
-        :return:
-        '''
         opt = self.opt
         model = self.model
         dicts = self.dicts
-
-        # TODO: D.S: Remove afterwards
-        print('Checkpoint save started')
-        sys.stdout.flush()
-
+        
 
         model_state_dict = self.model.state_dict()
         optim_state_dict = self.optim.state_dict()
@@ -133,7 +137,6 @@ class XETrainer(BaseTrainer):
         
         file_name = '%s_ppl_%.2f_e%.2f.pt' % (opt.save_model, valid_ppl, epoch)
         print('Writing to %s' % file_name)
-        sys.stdout.flush()
         torch.save(checkpoint, file_name)
         
         # check te save directory here
@@ -147,9 +150,12 @@ class XETrainer(BaseTrainer):
         """ New semantics of PyTorch: save space by not creating gradients """
         with torch.no_grad():
             for i in range(len(data)):
+                    
                 batch = data.next()[0]
                 batch.cuda()
-
+                
+                
+                
                 """ outputs can be either 
                         hidden states from decoder or
                         prob distribution from decoder generator
@@ -157,15 +163,15 @@ class XETrainer(BaseTrainer):
                 outputs = self.model(batch)
                 # ~ targets = batch[1][1:]
                 targets = batch.get('target_output')
-
+                
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False)
-
+                
                 loss_data = loss_output['nll']
-                # ~
+#~ 
                 total_loss += loss_data
                 total_words += batch.tgt_size
 
-        self.model.train() #D.S: TODO: Why is this done here?
+        self.model.train()
         return total_loss / total_words
         
     def train_epoch(self, epoch, resume=False, batchOrder=None, iteration=0):
@@ -205,37 +211,28 @@ class XETrainer(BaseTrainer):
             curriculum = (epoch < opt.curriculum)
             
             samples = trainData.next(curriculum=curriculum)
-                        
-            batch = self.to_variable(samples[0])
-            
+
             oom = False
             try:
+                # ~ batch = self.to_variable(samples[0])
+                batch = samples[0]
+                batch.cuda()
             
-                outputs = self.model(batch) #self.model(batch) executes the forward path of our model
-                # TODO: D.S: Just remove flush
-                print('Forward path done')
-                sys.stdout.flush()
-
-
-                targets = batch[1][1:]
-                tgt_inputs = batch[1][:-1]
+                outputs = self.model(batch)
+                    
+                targets = batch.get('target_output')
                 
-                batch_size = targets.size(1)
+                batch_size = batch.size
                 
-                tgt_mask = targets.data.ne(onmt.Constants.PAD)
-                tgt_size = tgt_mask.sum()
+                tgt_mask = batch.get('tgt_mask')
+                tgt_size = batch.tgt_size
                 
-                tgt_mask = torch.autograd.Variable(tgt_mask)
                 normalizer = 1
                 
-                loss_data, grad_outputs = self.loss_function(outputs, targets, generator=self.model.generator, 
+                loss_output = self.loss_function(outputs, targets, generator=self.model.generator, 
                                                              backward=True, mask=tgt_mask)
-
-                # TODO: D.S: Just remove flush
-                print('Loss calculated')
-                sys.stdout.flush()
-
-                #~ outputs.backward(grad_outputs)
+                
+                loss_data = loss_output['nll']
                 
             except RuntimeError as e:
                 if 'out of memory' in str(e):
@@ -246,8 +243,8 @@ class XETrainer(BaseTrainer):
                     raise e        
                 
             if not oom:
-                src_size = batch[0].data.ne(onmt.Constants.PAD).sum().item()
-                tgt_size = targets.data.ne(onmt.Constants.PAD).sum().item()
+                src_size = batch.src_size
+                tgt_size = batch.tgt_size
                 
                 
                 counter = counter + 1 
@@ -270,21 +267,11 @@ class XETrainer(BaseTrainer):
                     num_accumulated_words = 0
                     num_accumulated_sents = 0
                     num_updates = self.optim._step
-
-                    # TODO: D.S: Just remove flush
-                    print('Model parameter update done')
-                    sys.stdout.flush()
-
-
                     if opt.save_every > 0 and num_updates % opt.save_every == -1 % opt.save_every :
                         valid_loss = self.eval(self.validData)
                         valid_ppl = math.exp(min(valid_loss, 100))
                         print('Validation perplexity: %g' % valid_ppl)
-
-                        # TODO: D.S: Remove afterwards
-                        print('Validation done')
-                        sys.stdout.flush()
-
+                        
                         ep = float(epoch) - 1. + ((float(i) + 1.) / nSamples)
                         
                         self.save(ep, valid_ppl, batchOrder=batchOrder, iteration=i)
@@ -302,23 +289,21 @@ class XETrainer(BaseTrainer):
                 
                 
                 if i == 0 or (i % opt.log_interval == -1 % opt.log_interval):
-
                     print(("Epoch %2d, %5d/%5d; ; ppl: %6.2f ; lr: %.7f ; num updates: %7d " +
-                        "%5.0f src tok/s; %5.0f tgt tok/s; %s elapsed") %
-                        (epoch, i+1, len(trainData),
-                        math.exp(report_loss / report_tgt_words),
-                        optim.getLearningRate(),
-                        optim._step,
-                        report_src_words/(time.time()-start),
-                        report_tgt_words/(time.time()-start),
-                        str(datetime.timedelta(seconds=int(time.time() - self.start_time)))))
+                           "%5.0f src tok/s; %5.0f tgt tok/s; %s elapsed") %
+                          (epoch, i+1, len(trainData),
+                           math.exp(report_loss / report_tgt_words),
+                           optim.getLearningRate(),
+                           optim._step,
+                           report_src_words/(time.time()-start),
+                           report_tgt_words/(time.time()-start),
+                           str(datetime.timedelta(seconds=int(time.time() - self.start_time)))))
                     sys.stdout.flush()
 
                     report_loss, report_tgt_words = 0, 0
                     report_src_words = 0
                     start = time.time()
-            
-            
+
         return total_loss / total_words
     
     
@@ -357,9 +342,7 @@ class XETrainer(BaseTrainer):
         else:
             batchOrder = None
             iteration = 0
-            # TODO: D.S: Just remove flush
             print('Initializing model parameters')
-            sys.stdout.flush()
             init_model_parameters(model, opt)
             resume=False
         
@@ -367,12 +350,7 @@ class XETrainer(BaseTrainer):
         #valid_loss = self.eval(self.validData)
         #valid_ppl = math.exp(min(valid_loss, 100))
         #print('Validation perplexity: %g' % valid_ppl)
-        #sys.stdout.flush()
-
-        # TODO: D.S: remove afterwards
-        print('Starting training now')
-        sys.stdout.flush()
-
+        
         self.start_time = time.time()
         
         for epoch in range(opt.start_epoch, opt.start_epoch + opt.epochs):

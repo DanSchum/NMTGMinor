@@ -13,10 +13,11 @@ import math
 import time, datetime
 import random 
 import numpy as np
+import time
 from onmt.multiprocessing.multiprocessing_wrapper import MultiprocessingRunner
 from onmt.ModelConstructor import init_model_parameters
 from onmt.train_utils.trainer import BaseTrainer, XETrainer
-    
+
     
 
 class DynamicLossScaler:
@@ -102,8 +103,13 @@ class FP16XETrainer(XETrainer):
         batch_order = data.create_order(random=False)
         torch.cuda.empty_cache()
         self.model.eval()
+<<<<<<< HEAD
+        """ New semantics of PyTorch: save space by not creating gradients """
+        with torch.no_grad(): #Deactivates gradient calculation. Which is helpful in inference phase where no backward path is used. This saves memory.
+=======
         """ New semantics of PyTorch: not creating gradients in this mode """
         with torch.no_grad():
+>>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
             for i in range(len(data)):
                 
                 oom = False
@@ -174,14 +180,26 @@ class FP16XETrainer(XETrainer):
         num_accumulated_words = 0
         num_accumulated_sents = 0
         oom_count = 0
+<<<<<<< HEAD
+
+        #TODO: D.S: delete afterwards
+        print('Train epoch started')
+        sys.stdout.flush()
+=======
         grad_norm = 0
+>>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
         
-        for i in range(iteration, nSamples):
+        for i in range(iteration, nSamples): #starts at iteration and goes until samples reached.
 
             curriculum = (epoch < opt.curriculum)
             
             samples = trainData.next(curriculum=curriculum)
                         
+<<<<<<< HEAD
+            batch = self.to_variable(samples[0]) #Uses one sequence of input data as batch
+            
+=======
+>>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
             oom = False
             try:
                 # ~ torch.cuda.empty_cache()
@@ -190,9 +208,19 @@ class FP16XETrainer(XETrainer):
                 batch.cuda()
             
                 outputs = self.model(batch)
+<<<<<<< HEAD
+
+                # TODO: D.S:
+                print('Forward path done')
+                sys.stdout.flush()
+
+                targets = batch[1][1:]
+                tgt_inputs = batch[1][:-1]
+=======
                     
                 targets = batch.get('target_output')
                 tgt_inputs = batch.get('target_input')
+>>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
                 
                 batch_size = batch.size
                 
@@ -203,6 +231,15 @@ class FP16XETrainer(XETrainer):
                 # Scale UP the loss so that the gradients are not cutoff
                 normalizer = 1.0 / self.scaler.loss_scale 
                 
+<<<<<<< HEAD
+                loss_data, _ = self.loss_function(outputs, targets, generator=self.model.generator, 
+                                                             backward=True, mask=None, normalizer=normalizer)
+                # TODO: D.S: Remove afterwards
+                print('Loss calculated')
+                sys.stdout.flush()
+
+
+=======
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, 
                                                              backward=True, mask=tgt_mask, normalizer=normalizer)
                 
@@ -213,6 +250,7 @@ class FP16XETrainer(XETrainer):
                 del loss_output
                 
                 
+>>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
             except RuntimeError as e:
                 if 'out of memory' in str(e) or 'get_temporary_buffer' in str(e) :
                     oom = True
@@ -236,11 +274,14 @@ class FP16XETrainer(XETrainer):
                 normalizer = num_accumulated_words if opt.normalize_gradient else 1
                 if num_accumulated_words >= opt.batch_size_update * 0.95:
                     # Update the parameters.
-                    
+
+                    # TODO: D.S: Remove afterwards
+                    print('Update parameters')
+                    sys.stdout.flush()
+
                     # First we have to copy the grads from fp16 to fp32
                     self._get_flat_grads(out=self.fp32_params.grad)
-                    
-                    
+
                     normalizer = normalizer * self.scaler.loss_scale 
                     # rescale and clip grads
                     self.fp32_params.grad.data.div_(normalizer)
@@ -283,6 +324,11 @@ class FP16XETrainer(XETrainer):
                         num_accumulated_words = 0
                         num_accumulated_sents = 0
                         num_updates = self.optim._step
+
+                        # TODO: D.S: Remove afterwards
+                        print('Update of parameters done')
+                        sys.stdout.flush()
+
                         if opt.save_every > 0 and num_updates % opt.save_every == -1 % opt.save_every :
                             valid_loss = self.eval(self.validData)
                             valid_ppl = math.exp(min(valid_loss, 100))
@@ -335,6 +381,10 @@ class FP16XETrainer(XETrainer):
         # Try to load the save_file
         checkpoint = None
         if save_file:
+            # TODO: D.S: Remove afterwards
+            print('Torch load executed')
+            sys.stdout.flush()
+
             checkpoint = torch.load(save_file)
         
         if checkpoint is not None:
@@ -354,29 +404,48 @@ class FP16XETrainer(XETrainer):
             del checkpoint
             
         else:
+            #Go here for new started training
             batchOrder = None
             iteration = 0
+
+            # TODO: D.S: Just remove flush
             print('Initializing model parameters')
+            sys.stdout.flush()
+            start_time = time.time()
+
+
             init_model_parameters(model, opt)
             resume=False
+<<<<<<< HEAD
+
+
+            end_time = time.time()
+
+            #TODO: D.S: Remove afterwards
+            print('Init Model done')
+            print('Exc Time: ' + str(end_time - start_time))
+            sys.stdout.flush()
+=======
             self.convert_fp16()
         
+>>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
         
         
-        valid_loss = self.eval(self.validData)
+        valid_loss = self.eval(self.validData) #Evaluates the current new initilized model with the valid data.
         valid_ppl = math.exp(min(valid_loss, 100))
         print('Validation perplexity: %g' % valid_ppl)
-        #~ 
+        sys.stdout.flush()
+
         self.start_time = time.time()
         
         for epoch in range(opt.start_epoch, opt.start_epoch + opt.epochs):
             print('')
 
             #  (1) train for one epoch on the training set
-            train_loss = self.train_epoch(epoch, resume=resume,
+            train_loss = self.train_epoch(epoch, resume=resume, #Parameters are just important if checkpoint was used.
                                                  batchOrder=batchOrder,
                                                  iteration=iteration)
-            train_ppl = math.exp(min(train_loss, 100))
+            train_ppl = math.exp(min(train_loss, 100)) #e^x
             print('Train perplexity: %g' % train_ppl)
 
             #  (2) evaluate on the validation set

@@ -14,6 +14,10 @@ onmt.Markdown.add_md_help_argument(parser)
 
 parser.add_argument('-model', required=True,
                     help='Path to model .pt file')
+parser.add_argument('-version', type=float, default=1.0,
+                    help="""Decoder version. The 2.0 one uses diverse decoding""")                    
+parser.add_argument('-diverse_beam_strength', type=float, default=0.5,
+                    help="""Diverse beam strength in decoding""")                    
 parser.add_argument('-input_type', default="word",
                     help="Input type: word/char")                    
 parser.add_argument('-src',   required=True,
@@ -77,7 +81,9 @@ def addone(f):
     
 def lenPenalty(s, l, alpha):
     
-    l_term = math.pow(l, alpha)
+    # ~ l_term = math.pow(l, alpha)
+    
+    l_term = math.pow(l + 5.0, alpha) / math.pow(6, alpha)
     return s / l_term
     
 def getSentenceFromTokens(tokens, input_type):
@@ -124,8 +130,11 @@ def main():
             opt.batch_size = 1
     else:
       inFile = open(opt.src)
-        
-    translator = onmt.EnsembleTranslator(opt)
+    
+    if opt.version == 1.0:
+        translator = onmt.EnsembleTranslator(opt)
+    elif opt.version == 2.0:
+        translator = onmt.Translator(opt)
         
     for line in addone(inFile):
         if line is not None:
@@ -145,8 +154,9 @@ def main():
             else:
                 raise NotImplementedError("Input type unknown")
 
-            if len(srcBatch) < opt.batch_size:
-                continue
+            #if len(srcBatch) < opt.batch_size:
+            #    print('srcBatch < opt.batch_size')
+            #    continue
         else:
             # at the end of file, check last batch
             if len(srcBatch) == 0:
@@ -154,7 +164,7 @@ def main():
 
         predBatch, predScore, predLength, goldScore, numGoldWords  = translator.translate(srcBatch,
                                                                                     tgtBatch)
-        if opt.normalize:
+        if opt.normalize and opt.version == 1.0:
             predBatch_ = []
             predScore_ = []
             for bb, ss, ll in zip(predBatch, predScore, predLength):
@@ -168,7 +178,7 @@ def main():
             predBatch = predBatch_
             predScore = predScore_    
                                                               
-        predScoreTotal += sum(score[0].item() for score in predScore)
+        predScoreTotal += sum(score[0] for score in predScore)
         predWordsTotal += sum(len(x[0]) for x in predBatch)
         if tgtF is not None:
             goldScoreTotal += sum(goldScore).item()
