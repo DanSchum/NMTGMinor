@@ -9,7 +9,7 @@ UNK_WORD = '<unk>'
 BOS_WORD = '<s>'
 EOS_WORD = '</s>'
 
-checkpointing = 0
+checkpointing = 1
 static = False
 residual_type = 'regular'
 max_position_length = 512
