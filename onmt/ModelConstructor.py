@@ -78,7 +78,7 @@ def build_model(opt, dicts):
         
         generator = onmt.modules.BaseModel.Generator(opt.model_size, dicts['tgt'].size())
         
-        model = Transformer(encoder, decoder, generator)    
+        model = Transformer(encoder, decoder, generator)
 
         loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
         
@@ -219,6 +219,26 @@ def build_model(opt, dicts):
         model = Transformer(encoder, decoder, generator)
 
         loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
+
+    elif opt.model in ['transformer_memory_compressed']:
+        from onmt.modules.TransformerMemoryCompressed.Models import TransformerEncoderMemoryCompressed, TransformerDecoderMemoryCompressed, TransformerMemoryCompressed
+        onmt.Constants.init_value = opt.param_init
+
+        if opt.time == 'positional_encoding':
+            positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+        else:
+            positional_encoder = None
+
+        encoder = TransformerEncoderMemoryCompressed(opt, dicts['src'], positional_encoder)
+        decoder = TransformerDecoderMemoryCompressed(opt, dicts['tgt'], positional_encoder)
+
+        generator = onmt.modules.BaseModel.Generator(opt.model_size, dicts['tgt'].size())
+
+        model = TransformerMemoryCompressed(encoder, decoder, generator)
+
+        loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
+
+
     else:
         raise NotImplementedError
         

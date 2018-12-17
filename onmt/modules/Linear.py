@@ -9,7 +9,14 @@ import torch.nn.functional as F
 
 
 def group_linear(linears, input, bias=False):
-            
+        """
+
+        :param linears: List of linear layers, which get concatenated to get complete weight matrix
+        :param input:
+        :param bias:
+        :return:
+        """
+
         weights = [linear.weight for linear in linears]
         
         weight = torch.cat(weights, dim=0)
