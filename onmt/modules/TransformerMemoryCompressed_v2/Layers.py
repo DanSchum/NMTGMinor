@@ -324,12 +324,11 @@ class EncoderLayerLocalAttention(nn.Module):
             feedforward = MaxOut(d_model, d_model, k)
         self.feedforward = Bottle(feedforward)
 
-    def forward(self, query, split, attn_mask, step_num, prev_k, prev_v, pad_mask=None):
+    def forward(self, input, attn_mask, step_num, prev_k, prev_v, pad_mask=None):
         pad_mask = None
-        query = self.preprocess_attn(query)
-        split = self.preprocess_attn(split)
-        out, k, v = self.multihead(query, split, split, attn_mask, step_num, prev_k, prev_v)
-        input = self.postprocess_attn(out, query)
+        query = self.preprocess_attn(input)
+        out, k, v = self.multihead(query, query, query, attn_mask, step_num, prev_k, prev_v)
+        input = self.postprocess_attn(out, input)
 
         """ Feed forward layer 
             layernorm > ffn > dropout > residual

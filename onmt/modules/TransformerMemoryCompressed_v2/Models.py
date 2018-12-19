@@ -113,39 +113,46 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         context = emb.transpose(0, 1).contiguous()
 
         # D.S: Context is splitted in seperate parts
-        states_k = torch.zeros((self.n_heads, context.shape[0], (self.model_size//self.n_heads)))
-        states_v = torch.zeros((self.n_heads, context.shape[0], (self.model_size//self.n_heads)))
+        states_k = []
+        states_v = []
 
         print(context.shape)
-        original_batch_size = context.shape[0]
-        splits = torch.split(context, self.block_size, dim=0)
-        for split in splits:
-            for i, layer in enumerate(self.layer_modules):
+        #original_batch_size = context.shape[0]
+        #context = torch.split(context, self.block_size, dim=0)
+        #for split in context:
+        if len(states_k) == 0:
+            # Init k,v values which are used to create dependencies through all splits
+            states_k.append(torch.zeros(context.shape))
+            states_v.append(torch.zeros(context.shape))
+        for i, layer in enumerate(self.layer_modules):
 
-                if type(layer) is EncoderLayerLocalAttention:
-                    #D.S: Handle Local Attention Layer
-                    print(split.shape)
+            if type(layer) is EncoderLayerLocalAttention:
+                #D.S: Handle Local Attention Layer
+
+                #print(context.shape)
+
+                    #print(split.shape)
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         #def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
-                        context, prev_k, prev_v = checkpoint(custom_layer(layer), context,
-                                                             split, mask_src,
-                                                             i, states_k, states_v)
+                        context, prev_k, prev_v = checkpoint(custom_layer(layer),
+                                                             context, mask_src,
+                                                             i, states_k.pop(-1), states_v.pop(-1))
                     else:
-                        context, prev_k, prev_v = layer(context, split, mask_src, i,
-                                                        states_k, states_v)  # batch_size x len_src x d_model
+                        context, prev_k, prev_v = layer(context, mask_src, i,
+                                                        states_k.pop(-1), states_v.pop(-1))  # batch_size x len_src x d_model
 
 
-                elif type(layer) is EncoderLayerMemoryCompressed:
-                    #D.S: Handle Memory Compressed Layer
-                    if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
-                        # def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
-                        context, prev_k, prev_v = checkpoint(custom_layer(layer), context, mask_src, )
-
-                    else:
-                        context, prev_k, prev_v = layer(context, mask_src)  # batch_size x len_src x d_model
+            elif type(layer) is EncoderLayerMemoryCompressed:
+                #D.S: Handle Memory Compressed Layer
+                if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
+                    # def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
+                    context, prev_k, prev_v = checkpoint(custom_layer(layer), context, mask_src, )
 
                 else:
-                    raise NotImplementedError
+                    context, prev_k, prev_v = layer(context, mask_src)  # batch_size x len_src x d_model
+
+            else:
+                raise NotImplementedError
 
 
         # From Google T2T

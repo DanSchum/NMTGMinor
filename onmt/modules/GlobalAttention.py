@@ -23,6 +23,7 @@
 import math
 import torch
 import torch.nn as nn
+from torch._C import dtype
 from torch.autograd import Variable
 import torch.nn.init as init
 import torch.nn.utils.weight_norm as WeightNorm
@@ -549,25 +550,16 @@ class LocalAttention(nn.Module):
 
     def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
 
-        len_query, b = query.size(0), query.size(1)
+        len_query, b = query.size(0), query.size(1) #batch_size_words x batch_size_sentence
         len_key, b_ = key.size(0), key.size(1)
 
         key_mask = value_mask
 
         # batch_size*h x len_query x d_head
         # project inputs to multi-heads
-        if self.share == 1:
-            shared_qkv = group_linear(
-                [self.fc_query.function.linear, self.fc_key.function.linear, self.fc_value.function.linear], query)
-            proj_query, proj_key, proj_value = shared_qkv.chunk(3, dim=-1)
-        elif self.share == 2:
-            proj_query = self.fc_query(query)  # batch_size x len_query x h*d_head
-            shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
-            proj_key, proj_value = shared_kv.chunk(2, dim=-1)
-        else:
-            proj_query = self.fc_query(query, mask=query_mask)
-            proj_key = self.fc_key(key, mask=key_mask)  # batch_size x len_key x h*d_head
-            proj_value = self.fc_value(value, mask=value_mask)  # batch_size x len_key x h*d_head
+        proj_query = self.fc_query(query)  # batch_size x len_query x h*d_head
+        shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
+        proj_key, proj_value = shared_kv.chunk(2, dim=-1)
 
         q, k, v = proj_query, proj_key, proj_value
         # prepare the shape for applying softmax
@@ -576,17 +568,23 @@ class LocalAttention(nn.Module):
         v = v.contiguous().view(len_key, b * self.h, self.d_head).transpose(0, 1)
 
         #D.S: Local attention starts here
-        #torch.arange(start, end, step)
-        current_position =  torch.arange(0, self.block_length, 1).eq(torch.fmod(step_num, self.block_length))
+        current_position = torch.cat((torch.zeros((1, step_num * self.block_length, 1)).byte(),
+                       torch.ones((1, (step_num + 1) * self.block_length, 1)).byte(),
+                       torch.zeros((1, 22 - ((step_num + 1) * self.block_length), 1)).byte()), dim=1)
+        k = torch.cat([k, torch.zeros(k.shape[0],(prev_k.shape[1]-k.shape[1]),k.shape[2])], dim=1)
+        v = torch.cat([v, torch.zeros(v.shape[0],(prev_v.shape[1]-v.shape[1]),v.shape[2])], dim=1)
+
         k = torch.where(current_position, k, prev_k)
         v = torch.where(current_position, v, prev_v)
 
+        q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2])], dim=1)
         q = q * (self.d_head ** -0.5)
+
 
         # get dotproduct softmax attns for each head
         attns = torch.bmm(q, k.transpose(1, 2))  # batch_size*h x len_query x len_key
 
-        attns = attns.view(b, self.h, len_query, len_key)
+        attns = attns.view(b, self.h, len_query, len_query)
         mask_ = mask.unsqueeze(-3)
         # FP16 support: cast to float and back
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
@@ -594,7 +592,7 @@ class LocalAttention(nn.Module):
         # return mean attention from all heads as coverage
         coverage = torch.mean(attns, dim=1)
         attns = self.attn_dropout(attns)
-        attns = attns.view(b * self.h, len_query, len_key)
+        attns = attns.view(b * self.h, len_query, len_query)
 
         # apply attns on value
         out = torch.bmm(attns, v)  # batch_size*h x len_query x d_head
