@@ -570,8 +570,6 @@ class LocalAttention(nn.Module):
         v = v.contiguous().view(len_key, b * self.h, self.d_head).transpose(0, 1)
 
         #D.S: Local attention starts here
-        print('Step  Number: '+ str(step_num))
-        print('block_size: '+ str(self.block_size))
         current_position = torch.cat((torch.zeros((1, step_num * self.block_size, 1)).byte(),
                        torch.ones((1, self.block_size, 1)).byte(),
                        torch.zeros((1,
