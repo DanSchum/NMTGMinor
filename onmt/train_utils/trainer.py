@@ -14,7 +14,7 @@ import random
 import numpy as np
 from onmt.multiprocessing.multiprocessing_wrapper import MultiprocessingRunner
 from onmt.ModelConstructor import init_model_parameters
-from onmt.utils import checkpoint_paths
+from onmt.utils import checkpoint_paths, padToBlockSizeDimZero
 
 
 class BaseTrainer(object):
@@ -168,7 +168,10 @@ class XETrainer(BaseTrainer):
                 outputs = self.model(batch)
                 # ~ targets = batch[1][1:]
                 targets = batch.get('target_output')
-                
+
+
+                targets = padToBlockSizeDimZero(targets, self.opt.block_size)
+
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False)
                 
                 loss_data = loss_output['nll']
@@ -227,7 +230,9 @@ class XETrainer(BaseTrainer):
                 outputs = self.model(batch)
                     
                 targets = batch.get('target_output')
-                
+
+                targets = padToBlockSizeDimZero(targets, self.opt.block_size)
+
                 batch_size = batch.size
                 
                 tgt_mask = batch.get('tgt_mask')
@@ -352,10 +357,10 @@ class XETrainer(BaseTrainer):
             init_model_parameters(model, opt)
             resume=False
         
-        
-        valid_loss = self.eval(self.validData)
-        valid_ppl = math.exp(min(valid_loss, 100))
-        print('Validation perplexity: %g' % valid_ppl)
+        #TODO D.S. Uncomment when publish
+        #valid_loss = self.eval(self.validData)
+        #valid_ppl = math.exp(min(valid_loss, 100))
+        #print('Validation perplexity: %g' % valid_ppl)
         
         self.start_time = time.time()
         

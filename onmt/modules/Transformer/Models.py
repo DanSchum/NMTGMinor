@@ -241,7 +241,7 @@ class TransformerDecoder(nn.Module):
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done
         # on the output, since the output can grow very large, being the sum of
-        # a whole stack of unnormalized layer outputs.    
+        # a whole stack of unnormalize  d layer outputs.
         output = self.postprocess_layer(output)
             
         

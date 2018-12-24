@@ -141,6 +141,8 @@ class Dataset(object):
                 # ~ print(len(batch_))
                 if self.multiplier > 1:
                     assert(len(batch_) % self.multiplier == 0, "batch size is not multiplied, current batch_size is %d " % len(batch_))
+
+
                 self.batches.append(batch_) # add this batch into the batch list
                 
                 cur_batch = cur_batch[scaled_size:] # reset the current batch

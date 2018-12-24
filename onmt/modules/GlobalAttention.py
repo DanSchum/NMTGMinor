@@ -372,8 +372,9 @@ class MultiHeadAttentionMemoryCompressed(nn.Module):
             #Use max as compression function
             compressed_key = torch.max(key, -1)
 
-
+        #Linear transformation on original data for queries
         proj_query = self.fc_query(query)  # batch_size x len_query x h*d_head
+        #Linear transformation on compressed data for key and values
         shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
         proj_key, proj_value = shared_kv.chunk(2, dim=-1)
 
@@ -522,6 +523,7 @@ class LocalAttention(nn.Module):
 
     """
 
+    #TODO: D.S: Remove parameter share or add possibility to share weights in linear transformation
     def __init__(self, h, d_model, block_size, attn_p=0.1, static=True, share=3):
         super(LocalAttention, self).__init__()
         self.h = h
@@ -569,8 +571,10 @@ class LocalAttention(nn.Module):
 
         #D.S: Local attention starts here
         current_position = torch.cat((torch.zeros((1, step_num * self.block_length, 1)).byte(),
-                       torch.ones((1, (step_num + 1) * self.block_length, 1)).byte(),
-                       torch.zeros((1, 22 - ((step_num + 1) * self.block_length), 1)).byte()), dim=1)
+                       torch.ones((1, self.block_length, 1)).byte(),
+                       torch.zeros((1,
+                                    ((len_query - ((step_num + 1) * self.block_length)) if
+                                    (len_query - ((step_num + 1) * self.block_length)) >= 0 else 0), 1)).byte()), dim=1)
         k = torch.cat([k, torch.zeros(k.shape[0],(prev_k.shape[1]-k.shape[1]),k.shape[2])], dim=1)
         v = torch.cat([v, torch.zeros(v.shape[0],(prev_v.shape[1]-v.shape[1]),v.shape[2])], dim=1)
 
@@ -590,7 +594,7 @@ class LocalAttention(nn.Module):
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
         attns = F.softmax(attns.float(), dim=-1).type_as(attns)
         # return mean attention from all heads as coverage
-        coverage = torch.mean(attns, dim=1)
+        #coverage = torch.mean(attns, dim=1)
         attns = self.attn_dropout(attns)
         attns = attns.view(b * self.h, len_query, len_query)
 

@@ -192,5 +192,10 @@ def make_parser(parser):
     
     parser.add_argument('-n_mixtures', type=int, default=10,
                         help="Number of mixtures in moe.")
-    
+
+
+    #D.S: Added for memory compression
+    parser.add_argument('-block_size', type=int, default=10,
+                        help="Block size used to split context in self attention to reduce memory usage per iteration.")
+
     return parser

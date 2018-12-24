@@ -187,7 +187,8 @@ class Optim(object):
         self.beta1 = opt.beta1
         self.beta2 = opt.beta2
         self.weight_decay = opt.weight_decay
-        self.amsgrad = opt.amsgrad 
+        self.amsgrad = opt.amsgrad
+        self.block_size = opt.block_size
         
             
     def step(self, grad_denom=None):

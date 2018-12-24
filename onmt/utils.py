@@ -34,8 +34,6 @@ def mean_with_mask(context, mask=None):
 
     return mean
 
-
-
 # this function is borrowed from fairseq
 # https://github.com/pytorch/fairseq/blob/master/fairseq/utils.py
 def checkpoint_paths(path, pattern=r'model_ppl_(\d+).(\d+)\_e(\d+).(\d+).pt'):
@@ -58,3 +56,21 @@ def checkpoint_paths(path, pattern=r'model_ppl_(\d+).(\d+)\_e(\d+).(\d+).pt'):
             entries.append((idx, m.group(0)))
     # return [os.path.join(path, x[1]) for x in sorted(entries, reverse=True)]
     return [os.path.join(path, x[1]) for x in entries]
+
+def padToBlockSizeDimOne(input, block_size):
+
+    if input.shape[1] % block_size != 0:
+        # We need to pad here
+        padding = block_size - (input.shape[1] % block_size)
+        return torch.cat([input, torch.zeros((input.shape[0], padding), dtype=torch.int64)], dim=1)
+        # Now input can be divided into full blocks
+    return input
+
+
+def padToBlockSizeDimZero(input, block_size):
+    if input.shape[0] % block_size != 0:
+        # We need to pad here
+        padding = block_size - (input.shape[0] % block_size)
+        return torch.cat([input, torch.zeros((padding, input.shape[1]), dtype=torch.int64)], dim=0)
+        # Now input can be divided into full blocks
+    return input

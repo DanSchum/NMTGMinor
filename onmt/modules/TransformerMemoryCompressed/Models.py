@@ -1,12 +1,14 @@
 import numpy as np
 import torch, math
 import torch.nn as nn
-from onmt.modules.TransformerMemoryCompressed.Layers import EncoderLayer, DecoderLayer, PositionalEncoding, variational_dropout, PrePostProcessing, EncoderLayerLocalAttention, EncoderLayerMemoryCompressed
+from onmt.modules.TransformerMemoryCompressed.Layers import EncoderLayer, DecoderLayer, PositionalEncoding, \
+    variational_dropout, PrePostProcessing, EncoderLayerLocalAttention, EncoderLayerMemoryCompressed, DecoderLayerLocalAttention
 from onmt.modules.BaseModel import NMTModel, Reconstructor, DecoderState
 import onmt
 from onmt.modules.WordDrop import embedded_dropout
 from torch.utils.checkpoint import checkpoint
 from torch.autograd import Variable
+from onmt.utils import padToBlockSizeDimOne
 
 
 
@@ -42,7 +44,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         self.residual_dropout = opt.residual_dropout
         self.compression_factor = 2
         self.compression_function = 1
-        self.block_size = 11
+        self.block_size = 10
 
         self.word_lut = nn.Embedding(dicts.size(),
                                      self.model_size,
@@ -65,23 +67,29 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
     def build_modules(self):
 
-        self.layer_modules = nn.ModuleList([EncoderLayerLocalAttention(self.n_heads, self.model_size,
-                                                                       self.dropout, self.inner_size,
-                                                                       self.block_size,
-                                                                        self.attn_dropout, self.residual_dropout),
-                                            EncoderLayerMemoryCompressed(self.n_heads, self.model_size,
-                                                                         self.dropout, self.inner_size,
-                                                                        self.attn_dropout, self.residual_dropout),
-                                            EncoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
+        self.layer_modules = nn.ModuleList([EncoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
                                                                        self.inner_size, self.block_size,
-                                                                       self.attn_dropout, self.residual_dropout),
-                                            EncoderLayerMemoryCompressed(self.n_heads, self.model_size, self.dropout,
-                                                                         self.inner_size,
-                                                                         self.attn_dropout, self.residual_dropout),
-                                            EncoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
-                                                                       self.inner_size, self.block_size,
-                                                                       self.attn_dropout, self.residual_dropout)
-                                            ])
+                                                                       self.attn_dropout, self.residual_dropout) for _
+                                            in
+                                            range(self.layers)])
+
+        # self.layer_modules = nn.ModuleList([EncoderLayerLocalAttention(self.n_heads, self.model_size,
+        #                                                                self.dropout, self.inner_size,
+        #                                                                self.block_size,
+        #                                                                 self.attn_dropout, self.residual_dropout),
+        #                                     EncoderLayerMemoryCompressed(self.n_heads, self.model_size,
+        #                                                                  self.dropout, self.inner_size,
+        #                                                                 self.attn_dropout, self.residual_dropout),
+        #                                     EncoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
+        #                                                                self.inner_size, self.block_size,
+        #                                                                self.attn_dropout, self.residual_dropout),
+        #                                     EncoderLayerMemoryCompressed(self.n_heads, self.model_size, self.dropout,
+        #                                                                  self.inner_size,
+        #                                                                  self.attn_dropout, self.residual_dropout),
+        #                                     EncoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
+        #                                                                self.inner_size, self.block_size,
+        #                                                                self.attn_dropout, self.residual_dropout)
+        #                                     ])
 
     def forward(self, input, **kwargs):
         """
@@ -93,6 +101,10 @@ class TransformerEncoderMemoryCompressed(nn.Module):
             mask_src
 
         """
+
+        #D.S: Here padding to fit in blocks is made
+        input = padToBlockSizeDimOne(input, self.block_size)
+
 
         """ Embedding: batch_size x len_src x d_model """
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
@@ -113,25 +125,26 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         context = emb.transpose(0, 1).contiguous()
 
         # D.S: Context is splitted in seperate parts
-        states_k = torch.zeros((self.n_heads, context.shape[0], (self.model_size//self.n_heads)))
-        states_v = torch.zeros((self.n_heads, context.shape[0], (self.model_size//self.n_heads)))
+        batch_sentences = context.shape[1]
+        states_k = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads)))
+        states_v = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads)))
 
         print(context.shape)
         original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
-        for split in splits:
+        for step_num, split in enumerate(splits):
             for i, layer in enumerate(self.layer_modules):
 
                 if type(layer) is EncoderLayerLocalAttention:
                     #D.S: Handle Local Attention Layer
-                    print(split.shape)
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         #def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
+                        #TODO: Check why checkpoint is not done even its activated
                         context, prev_k, prev_v = checkpoint(custom_layer(layer), context,
                                                              split, mask_src,
-                                                             i, states_k, states_v)
+                                                             step_num, states_k, states_v)
                     else:
-                        context, prev_k, prev_v = layer(context, split, mask_src, i,
+                        context, prev_k, prev_v = layer(context, split, mask_src, step_num,
                                                         states_k, states_v)  # batch_size x len_src x d_model
 
 
@@ -139,13 +152,16 @@ class TransformerEncoderMemoryCompressed(nn.Module):
                     #D.S: Handle Memory Compressed Layer
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         # def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
-                        context, prev_k, prev_v = checkpoint(custom_layer(layer), context, mask_src, )
+                        context, prev_k, prev_v = checkpoint(custom_layer(layer), context, mask_src)
 
                     else:
                         context, prev_k, prev_v = layer(context, mask_src)  # batch_size x len_src x d_model
 
                 else:
                     raise NotImplementedError
+
+            states_k = prev_k
+            states_v = prev_v
 
 
         # From Google T2T
@@ -277,6 +293,7 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         self.time = opt.time
         self.version = opt.version
         self.residual_dropout = opt.residual_dropout
+        self.block_size = opt.block_size
 
         if opt.time == 'positional_encoding':
             self.time_transformer = positional_encoder
@@ -302,8 +319,9 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         self.build_modules()
 
     def build_modules(self):
-        self.layer_modules = nn.ModuleList([DecoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size,
-                                                         self.attn_dropout, self.residual_dropout) for _ in
+        self.layer_modules = nn.ModuleList([DecoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
+                                                                       self.inner_size, self.block_size,
+                                                                       self.attn_dropout, self.residual_dropout) for _ in
                                             range(self.layers)])
 
     def renew_buffer(self, new_len):
@@ -321,6 +339,8 @@ class TransformerDecoderMemoryCompressed(nn.Module):
 
     def add_layers(self, n_new_layer):
 
+        #TODO: D.S: Check if this is still needed
+        print('add_layers was executed. Change it to local attention layers')
         self.new_modules = list()
         self.layers += n_new_layer
 
@@ -347,6 +367,11 @@ class TransformerDecoderMemoryCompressed(nn.Module):
 
         """
 
+
+        #D.S: Here padding to fit in blocks is made
+        input = padToBlockSizeDimOne(input, self.block_size)
+        src = padToBlockSizeDimOne(src, self.block_size)
+
         """ Embedding: batch_size x len_tgt x d_model """
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
         if self.time == 'positional_encoding':
@@ -357,7 +382,8 @@ class TransformerDecoderMemoryCompressed(nn.Module):
             emb = emb[0]
         emb = self.preprocess_layer(emb)
 
-        mask_src = src.eq(onmt.Constants.PAD).unsqueeze(1)
+        #mask_src = src.eq(onmt.Constants.PAD).unsqueeze(1)
+        mask_src = torch.split(src, self.block_size, dim=-1)[0].eq(onmt.Constants.PAD).unsqueeze(1)
 
         pad_mask_src = src.data.ne(onmt.Constants.PAD)
 
@@ -366,16 +392,43 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         mask_tgt = torch.gt(mask_tgt, 0)
 
         output = emb.transpose(0, 1).contiguous()
+        # D.S: Context is splitted in seperate parts
+        batch_sentences = output.shape[1]
+        states_k = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
+        states_v = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
 
-        for i, layer in enumerate(self.layer_modules):
+        print(output.shape)
+        splits = torch.split(output, self.block_size, dim=0)
+        for step_num, split in enumerate(splits):
+            for i, layer in enumerate(self.layer_modules):
 
-            if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
+                if type(layer) is DecoderLayerLocalAttention:
+                    # D.S: Handle Local Attention Layer
+                    if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
+                        # def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
+                        # TODO: Check why checkpoint is not done even its activated
+                        output, prev_k, prev_v = checkpoint(custom_layer(layer), output,
+                                                             split, mask_tgt, mask_src, step_num, states_k, states_v)
+                    else:
+                        output, prev_k, prev_v = layer(output, split, mask_tgt, mask_src, step_num,
+                                                        states_k, states_v)  # batch_size x len_src x d_model
 
-                output, coverage = checkpoint(custom_layer(layer), output, context, mask_tgt, mask_src)
-                # batch_size x len_src x d_model
 
-            else:
-                output, coverage = layer(output, context, mask_tgt, mask_src)  # batch_size x len_src x d_model
+                elif type(layer) is EncoderLayerMemoryCompressed:
+                    # D.S: Handle Memory Compressed Layer
+                    if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
+                        # def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
+                        output, prev_k, prev_v = checkpoint(custom_layer(layer), output, mask_src)
+
+                    else:
+                        output, prev_k, prev_v = layer(output, mask_src)  # batch_size x len_src x d_model
+
+                else:
+                    raise NotImplementedError
+
+            #Write states from last split to input of next split
+            states_k = prev_k
+            states_v = prev_v
 
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done

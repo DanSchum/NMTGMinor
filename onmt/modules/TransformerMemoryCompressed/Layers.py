@@ -159,7 +159,7 @@ class DecoderLayer(nn.Module):
         query = self.preprocess_attn(input)
         
         self_context = query
-        
+
         out, _ = self.multihead_tgt(query, self_context, self_context, mask_tgt)
         
         if residual_dropout > 0:
@@ -394,3 +394,124 @@ class EncoderLayerMemoryCompressed(nn.Module):
         input = self.postprocess_ffn(out, input)
 
         return input
+
+
+class DecoderLayerLocalAttention(nn.Module):
+    """Wraps multi-head attentions and position-wise feed forward into one layer of decoder
+
+    Args:
+        h:       number of heads
+        d_model: dimension of model
+        p:       dropout probabolity
+        d_ff:    dimension of feed forward
+
+    Params:
+        multihead_tgt:  multi-head self attentions layer
+        multihead_src:  multi-head encoder-decoder attentions layer
+        feedforward:    feed forward layer
+
+    Input Shapes:
+        query:    batch_size x len_query x d_model
+        key:      batch_size x len_key x d_model
+        value:    batch_size x len_key x d_model
+        context:  batch_size x len_src x d_model
+        mask_tgt: batch_size x len_query x len_key or broadcastable
+        mask_src: batch_size x len_query x len_src or broadcastable
+
+    Output Shapes:
+        out:      batch_size x len_query x d_model
+        coverage: batch_size x len_query x len_key
+
+    """
+
+    def __init__(self, h, d_model, p, d_ff, block_size, attn_p=0.1, residual_p=0.1, version=1.0):
+        super(DecoderLayerLocalAttention, self).__init__()
+        self.version = version
+
+        self.preprocess_attn = PrePostProcessing(d_model, p, sequence='n')
+        self.postprocess_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
+
+        self.preprocess_src_attn = PrePostProcessing(d_model, p, sequence='n')
+        self.postprocess_src_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
+
+        self.preprocess_ffn = PrePostProcessing(d_model, p, sequence='n')
+        self.postprocess_ffn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
+
+        self.multihead_tgt = LocalAttention(h, d_model, block_size, attn_p=attn_p, static=onmt.Constants.static, share=1)
+        self.multihead_src = LocalAttention(h, d_model, block_size, attn_p=attn_p, static=onmt.Constants.static, share=2)
+
+        if onmt.Constants.activation_layer == 'linear_relu_linear':
+            ff_p = p
+            feedforward = FeedForward(d_model, d_ff, ff_p, static=onmt.Constants.static)
+        elif onmt.Constants.activation_layer == 'maxout':
+            k = int(math.ceil(d_ff / d_model))
+            feedforward = MaxOut(d_model, d_model, k)
+        self.feedforward = Bottle(feedforward)
+
+    def forward(self, input, context, mask_tgt, mask_src, step_num, prev_k, prev_v, pad_mask_tgt=None, pad_mask_src=None, residual_dropout=0.0):
+
+        """ Self attention layer
+            layernorm > attn > dropout > residual
+        """
+
+        # input and context should be time first ?
+
+        query = self.preprocess_attn(input)
+
+        self_context = query
+
+        #D.S. Set to local attention layer
+        out, k, v = self.multihead_tgt(query, self_context, self_context, mask_tgt, step_num, prev_k, prev_v)
+
+        if residual_dropout > 0:
+            input_ = F.dropout(input, residual_dropout, self.training, False)
+            input = self.postprocess_attn(out, input_)
+        else:
+            input = self.postprocess_attn(out, input)
+
+        """ Context Attention layer 
+            layernorm > attn > dropout > residual
+        """
+
+        query = self.preprocess_src_attn(input)
+        out, k, v = self.multihead_src(query, context, context, mask_src, step_num, prev_k, prev_v)
+        input = self.postprocess_src_attn(out, input)
+
+        """ Feed forward layer 
+            layernorm > ffn > dropout > residual
+        """
+        out = self.feedforward(self.preprocess_ffn(input))
+        input = self.postprocess_ffn(out, input)
+
+        return input, k, v
+
+    def step(self, input, context, mask_tgt, mask_src, pad_mask_tgt=None, pad_mask_src=None, buffer=None):
+        """ Self attention layer
+            layernorm > attn > dropout > residual
+        """
+
+        #TODO: D.S: What is this doing here?
+
+        query = self.preprocess_attn(input)
+
+        out, _, buffer = self.multihead_tgt.step(query, query, query, mask_tgt, buffer=buffer)
+
+        input = self.postprocess_attn(out, input)
+
+        """ Context Attention layer 
+            layernorm > attn > dropout > residual
+        """
+
+        query = self.preprocess_src_attn(input)
+        out, coverage, buffer = self.multihead_src.step(query, context, context, mask_src, buffer=buffer)
+
+        input = self.postprocess_src_attn(out, input)
+
+        """ Feed forward layer 
+            layernorm > ffn > dropout > residual
+        """
+        out = self.feedforward(self.preprocess_ffn(input))
+
+        input = self.postprocess_ffn(out, input)
+
+        return input, coverage, buffer
