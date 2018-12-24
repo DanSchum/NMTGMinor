@@ -129,7 +129,6 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         states_k = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads)))
         states_v = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads)))
 
-        print(context.shape)
         original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
@@ -397,7 +396,6 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         states_k = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
         states_v = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
 
-        print(output.shape)
         splits = torch.split(output, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
             for i, layer in enumerate(self.layer_modules):
