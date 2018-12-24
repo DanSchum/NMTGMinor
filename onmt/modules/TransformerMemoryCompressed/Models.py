@@ -109,6 +109,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         """ Embedding: batch_size x len_src x d_model """
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
+        emb.cuda()
 
         """ Scale the emb by sqrt(d_model) """
 
