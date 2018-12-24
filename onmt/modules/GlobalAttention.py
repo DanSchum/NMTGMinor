@@ -577,6 +577,7 @@ class LocalAttention(nn.Module):
                        torch.zeros((1,
                                     ((len_query - ((step_num + 1) * self.block_size)) if
                                      (len_query - ((step_num + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
+        current_position = current_position.cuda()
         k = torch.cat([k, torch.zeros(k.shape[0],(prev_k.shape[1]-k.shape[1]),k.shape[2]).cuda()], dim=1)
         v = torch.cat([v, torch.zeros(v.shape[0],(prev_v.shape[1]-v.shape[1]),v.shape[2]).cuda()], dim=1)
 

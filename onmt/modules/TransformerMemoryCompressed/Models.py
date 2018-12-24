@@ -44,7 +44,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         self.residual_dropout = opt.residual_dropout
         self.compression_factor = 2
         self.compression_function = 1
-        self.block_size = 10
+        self.block_size = opt.block_size
 
         self.word_lut = nn.Embedding(dicts.size(),
                                      self.model_size,
