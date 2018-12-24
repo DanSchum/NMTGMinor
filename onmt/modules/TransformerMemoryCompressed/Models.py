@@ -126,8 +126,8 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         # D.S: Context is splitted in seperate parts
         batch_sentences = context.shape[1]
-        states_k = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads))).cuda()
-        states_v = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads))).cuda()
+        states_k = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads)))
+        states_v = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads)))
 
         original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
@@ -393,8 +393,8 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         output = emb.transpose(0, 1).contiguous()
         # D.S: Context is splitted in seperate parts
         batch_sentences = output.shape[1]
-        states_k = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads))).cuda()
-        states_v = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads))).cuda()
+        states_k = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
+        states_v = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
 
         splits = torch.split(output, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
