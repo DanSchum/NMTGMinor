@@ -104,7 +104,6 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         #D.S: Here padding to fit in blocks is made
         input = padToBlockSizeDimOne(input, self.block_size)
-        input = input.cuda()
 
 
         """ Embedding: batch_size x len_src x d_model """
