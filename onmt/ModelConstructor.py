@@ -221,7 +221,7 @@ def build_model(opt, dicts):
         loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
 
     elif opt.model in ['transformer_memory_compressed']:
-        from onmt.modules.TransformerMemoryCompressed.Models import TransformerEncoderMemoryCompressed, TransformerDecoderMemoryCompressed, TransformerMemoryCompressed
+        from onmt.modules.TransformerMemoryCompressed.Models import TransformerEncoderMemoryCompressed, TransformerDecoderMemoryCompressed, TransformerMemoryCompressed, PositionalEncoding
         onmt.Constants.init_value = opt.param_init
 
         if opt.time == 'positional_encoding':

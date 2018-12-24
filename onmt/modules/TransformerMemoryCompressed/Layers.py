@@ -272,7 +272,10 @@ class PositionalEncoding(nn.Module):
         
         if len_seq > self.len_max:
             self.renew(len_seq)
-        
+
+        word_emb = word_emb.cuda()
+        self.pos_emb = self.pos_emb.cuda()
+
         if word_emb.size(1) == len_seq:
             out = word_emb + Variable(self.pos_emb[:len_seq, :], requires_grad=False)
         else:
