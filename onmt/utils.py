@@ -62,7 +62,7 @@ def padToBlockSizeDimOne(input, block_size):
     if input.shape[1] % block_size != 0:
         # We need to pad here
         padding = block_size - (input.shape[1] % block_size)
-        return torch.cat([input, torch.zeros((input.shape[0], padding), dtype=torch.int64).cuda()], dim=1)
+        return torch.cat([input, torch.zeros((input.shape[0], padding), dtype=torch.int64)], dim=1)
         # Now input can be divided into full blocks
     return input
 
@@ -71,6 +71,6 @@ def padToBlockSizeDimZero(input, block_size):
     if input.shape[0] % block_size != 0:
         # We need to pad here
         padding = block_size - (input.shape[0] % block_size)
-        return torch.cat([input, torch.zeros((padding, input.shape[1]), dtype=torch.int64).cuda()], dim=0)
+        return torch.cat([input, torch.zeros((padding, input.shape[1]), dtype=torch.int64)], dim=0)
         # Now input can be divided into full blocks
     return input
