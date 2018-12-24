@@ -541,7 +541,7 @@ class LocalAttention(nn.Module):
         self.fc_concat = Bottle(Linear(h * self.d_head, d_model, bias=False))
 
         #D.S: Add block length value, to set the size of blocks in which the input sequence is divided to.
-        self.block_length = block_size
+        self.block_size = block_size
 
         self.sm = nn.Softmax(dim=-1)
 
@@ -570,11 +570,13 @@ class LocalAttention(nn.Module):
         v = v.contiguous().view(len_key, b * self.h, self.d_head).transpose(0, 1)
 
         #D.S: Local attention starts here
-        current_position = torch.cat((torch.zeros((1, step_num * self.block_length, 1)).byte(),
-                       torch.ones((1, self.block_length, 1)).byte(),
+        print('Step  Number: '+ str(step_num))
+        print('block_size: '+ str(self.block_size))
+        current_position = torch.cat((torch.zeros((1, step_num * self.block_size, 1)).byte(),
+                       torch.ones((1, self.block_size, 1)).byte(),
                        torch.zeros((1,
-                                    ((len_query - ((step_num + 1) * self.block_length)) if
-                                    (len_query - ((step_num + 1) * self.block_length)) >= 0 else 0), 1)).byte()), dim=1)
+                                    ((len_query - ((step_num + 1) * self.block_size)) if
+                                     (len_query - ((step_num + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
         k = torch.cat([k, torch.zeros(k.shape[0],(prev_k.shape[1]-k.shape[1]),k.shape[2])], dim=1)
         v = torch.cat([v, torch.zeros(v.shape[0],(prev_v.shape[1]-v.shape[1]),v.shape[2])], dim=1)
 
