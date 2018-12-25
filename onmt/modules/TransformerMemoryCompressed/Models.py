@@ -23,7 +23,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
     """Encoder in 'Attention is all you need'
 
     Args:
-        opt: list of options ( see train.py )
+        opt: list of options ( see train.py )        self.cuda = opt
         dicts : dictionary (for source language)
 
     """
@@ -45,6 +45,8 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         self.compression_factor = 2
         self.compression_function = 1
         self.block_size = opt.block_size
+        self.cuda = (len(opt.gpus) >= 1)
+
 
         self.word_lut = nn.Embedding(dicts.size(),
                                      self.model_size,
@@ -68,7 +70,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
     def build_modules(self):
 
         self.layer_modules = nn.ModuleList([EncoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
-                                                                       self.inner_size, self.block_size,
+                                                                       self.inner_size, self.block_size, self.cuda,
                                                                        self.attn_dropout, self.residual_dropout) for _
                                             in
                                             range(self.layers)])
@@ -103,7 +105,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         """
 
         #D.S: Here padding to fit in blocks is made
-        input = padToBlockSizeDimOne(input, self.block_size)
+        input = padToBlockSizeDimOne(input, self.block_size, self.cuda)
 
 
         """ Embedding: batch_size x len_src x d_model """
@@ -126,8 +128,16 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         # D.S: Context is splitted in seperate parts
         batch_sentences = context.shape[1]
-        states_k = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads))).cuda()
-        states_v = torch.zeros((self.n_heads*batch_sentences, context.shape[0], (self.model_size//self.n_heads))).cuda()
+        states_k = torch.zeros(
+            (self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
+        states_v = torch.zeros(
+            (self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
+
+        if self.cuda:
+            states_k = states_k.cuda()
+            states_v = states_v.cuda()
+
+
 
         original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
@@ -293,6 +303,8 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         self.version = opt.version
         self.residual_dropout = opt.residual_dropout
         self.block_size = opt.block_size
+        self.cuda = (len(opt.gpus) >= 1)
+
 
         if opt.time == 'positional_encoding':
             self.time_transformer = positional_encoder
@@ -319,7 +331,7 @@ class TransformerDecoderMemoryCompressed(nn.Module):
 
     def build_modules(self):
         self.layer_modules = nn.ModuleList([DecoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
-                                                                       self.inner_size, self.block_size,
+                                                                       self.inner_size, self.block_size, self.cuda,
                                                                        self.attn_dropout, self.residual_dropout) for _ in
                                             range(self.layers)])
 
@@ -368,8 +380,8 @@ class TransformerDecoderMemoryCompressed(nn.Module):
 
 
         #D.S: Here padding to fit in blocks is made
-        input = padToBlockSizeDimOne(input, self.block_size)
-        src = padToBlockSizeDimOne(src, self.block_size)
+        input = padToBlockSizeDimOne(input, self.block_size, self.cuda)
+        src = padToBlockSizeDimOne(src, self.block_size, self.cuda)
 
         """ Embedding: batch_size x len_tgt x d_model """
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
@@ -393,8 +405,13 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         output = emb.transpose(0, 1).contiguous()
         # D.S: Context is splitted in seperate parts
         batch_sentences = output.shape[1]
-        states_k = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads))).cuda()
-        states_v = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads))).cuda()
+
+        states_k = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
+        states_v = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
+
+        if self.cuda:
+            states_k = states_k.cuda()
+            states_v = states_v.cuda()
 
         splits = torch.split(output, self.block_size, dim=0)
         for step_num, split in enumerate(splits):

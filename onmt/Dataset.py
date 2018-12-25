@@ -55,6 +55,7 @@ class Batch(object):
             
     def cuda(self):
         for key, value in self.tensors.items():
+
             self.tensors[key] = value.cuda()
             #self.tensors[key] = value
 

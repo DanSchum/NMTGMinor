@@ -524,11 +524,12 @@ class LocalAttention(nn.Module):
     """
 
     #TODO: D.S: Remove parameter share or add possibility to share weights in linear transformation
-    def __init__(self, h, d_model, block_size, attn_p=0.1, static=True, share=3):
+    def __init__(self, h, d_model, block_size, cuda, attn_p=0.1, static=True, share=3):
         super(LocalAttention, self).__init__()
         self.h = h
         self.d = d_model
         self.share = share
+        self.cuda = cuda
 
         assert d_model % h == 0
 
@@ -575,14 +576,21 @@ class LocalAttention(nn.Module):
                        torch.zeros((1,
                                     ((len_query - ((step_num + 1) * self.block_size)) if
                                      (len_query - ((step_num + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
-        current_position = current_position.cuda()
-        k = torch.cat([k, torch.zeros(k.shape[0],(prev_k.shape[1]-k.shape[1]),k.shape[2]).cuda()], dim=1)
-        v = torch.cat([v, torch.zeros(v.shape[0],(prev_v.shape[1]-v.shape[1]),v.shape[2]).cuda()], dim=1)
+
+        if self.cuda:
+            current_position = current_position.cuda()
+            k = torch.cat([k, torch.zeros(k.shape[0],(prev_k.shape[1]-k.shape[1]),k.shape[2]).cuda()], dim=1)
+            v = torch.cat([v, torch.zeros(v.shape[0],(prev_v.shape[1]-v.shape[1]),v.shape[2]).cuda()], dim=1)
+            q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2]).cuda()], dim=1)
+        else:
+            current_position = current_position
+            k = torch.cat([k, torch.zeros(k.shape[0], (prev_k.shape[1] - k.shape[1]), k.shape[2])], dim=1)
+            v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2])], dim=1)
+            q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2])], dim=1)
 
         k = torch.where(current_position, k, prev_k)
         v = torch.where(current_position, v, prev_v)
 
-        q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2]).cuda()], dim=1)
         q = q * (self.d_head ** -0.5)
 
 

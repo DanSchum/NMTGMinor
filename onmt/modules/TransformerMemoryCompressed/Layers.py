@@ -232,13 +232,14 @@ class PositionalEncoding(nn.Module):
         out:   batch_size x len_seq x d_model
         
     """
-    def __init__(self, d_model, p=0, len_max=512):
+    def __init__(self, d_model, cuda, p=0, len_max=512):
         # save a fixed positional embedding matrix up to len_max,
         # so that no need to recreate it everytime
         super(PositionalEncoding, self).__init__()
         self.len_max=len_max
         self.d_model = d_model
         self.data_type = None
+        self.cuda = cuda
         
         self.renew(len_max)
         
@@ -273,8 +274,9 @@ class PositionalEncoding(nn.Module):
         if len_seq > self.len_max:
             self.renew(len_seq)
 
-        word_emb = word_emb.cuda()
-        self.pos_emb = self.pos_emb.cuda()
+        if self.cuda:
+            word_emb = word_emb.cuda()
+            self.pos_emb = self.pos_emb.cuda()
 
         if word_emb.size(1) == len_seq:
             out = word_emb + Variable(self.pos_emb[:len_seq, :], requires_grad=False)
@@ -309,15 +311,16 @@ class EncoderLayerLocalAttention(nn.Module):
         out: batch_size x len_query x d_model
     """
 
-    def __init__(self, h, d_model, p, d_ff, block_size, attn_p=0.1, residual_p=0.1, version=1.0):
+    def __init__(self, h, d_model, p, d_ff, block_size, cuda, attn_p=0.1, residual_p=0.1, version=1.0):
         super(EncoderLayerLocalAttention, self).__init__()
         self.version = version
+        self.cuda = cuda
 
         self.preprocess_attn = PrePostProcessing(d_model, 0.0, sequence='n')
         self.postprocess_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
         self.preprocess_ffn = PrePostProcessing(d_model, 0.0, sequence='n')
         self.postprocess_ffn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
-        self.multihead = LocalAttention(h, d_model, block_size, attn_p=attn_p, static=onmt.Constants.static, share=1)
+        self.multihead = LocalAttention(h, d_model, block_size, self.cuda, attn_p=attn_p, static=onmt.Constants.static, share=1)
 
         if onmt.Constants.activation_layer == 'linear_relu_linear':
             ff_p = p
@@ -427,9 +430,10 @@ class DecoderLayerLocalAttention(nn.Module):
 
     """
 
-    def __init__(self, h, d_model, p, d_ff, block_size, attn_p=0.1, residual_p=0.1, version=1.0):
+    def __init__(self, h, d_model, p, d_ff, block_size, cuda, attn_p=0.1, residual_p=0.1, version=1.0):
         super(DecoderLayerLocalAttention, self).__init__()
         self.version = version
+        self.cuda = cuda
 
         self.preprocess_attn = PrePostProcessing(d_model, p, sequence='n')
         self.postprocess_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
@@ -440,8 +444,8 @@ class DecoderLayerLocalAttention(nn.Module):
         self.preprocess_ffn = PrePostProcessing(d_model, p, sequence='n')
         self.postprocess_ffn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
 
-        self.multihead_tgt = LocalAttention(h, d_model, block_size, attn_p=attn_p, static=onmt.Constants.static, share=1)
-        self.multihead_src = LocalAttention(h, d_model, block_size, attn_p=attn_p, static=onmt.Constants.static, share=2)
+        self.multihead_tgt = LocalAttention(h, d_model, block_size, self.cuda, attn_p=attn_p, static=onmt.Constants.static, share=1)
+        self.multihead_src = LocalAttention(h, d_model, block_size, self.cuda, attn_p=attn_p, static=onmt.Constants.static, share=2)
 
         if onmt.Constants.activation_layer == 'linear_relu_linear':
             ff_p = p

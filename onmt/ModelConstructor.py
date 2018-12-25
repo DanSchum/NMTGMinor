@@ -37,6 +37,9 @@ def build_model(opt, dicts):
     model = None
     
     opt = update_backward_compatibility(opt)
+
+    cuda = (len(opt.gpus) >= 1)
+
     
     
     onmt.Constants.layer_norm = opt.layer_norm
@@ -130,7 +133,7 @@ def build_model(opt, dicts):
         onmt.Constants.weight_norm = opt.weight_norm
         onmt.Constants.init_value = opt.param_init
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN )
+        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
         
         encoder = ParallelTransformerEncoder(opt, dicts['src'], positional_encoder)
         decoder = ParallelTransformerDecoder(opt, dicts['tgt'], positional_encoder)
@@ -149,7 +152,7 @@ def build_model(opt, dicts):
         onmt.Constants.weight_norm = opt.weight_norm
         onmt.Constants.init_value = opt.param_init
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN )
+        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
         time_encoder = TimeEncoding(opt.model_size, len_max=32)
 
         
@@ -225,7 +228,7 @@ def build_model(opt, dicts):
         onmt.Constants.init_value = opt.param_init
 
         if opt.time == 'positional_encoding':
-            positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+            positional_encoder = PositionalEncoding(opt.model_size, cuda, len_max=MAX_LEN)
         else:
             positional_encoder = None
 

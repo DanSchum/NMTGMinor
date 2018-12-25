@@ -57,20 +57,26 @@ def checkpoint_paths(path, pattern=r'model_ppl_(\d+).(\d+)\_e(\d+).(\d+).pt'):
     # return [os.path.join(path, x[1]) for x in sorted(entries, reverse=True)]
     return [os.path.join(path, x[1]) for x in entries]
 
-def padToBlockSizeDimOne(input, block_size):
+def padToBlockSizeDimOne(input, block_size, cuda):
 
     if input.shape[1] % block_size != 0:
         # We need to pad here
         padding = block_size - (input.shape[1] % block_size)
-        return torch.cat([input, torch.zeros((input.shape[0], padding), dtype=torch.int64).cuda()], dim=1)
+        if cuda:
+            return torch.cat([input, torch.zeros((input.shape[0], padding), dtype=torch.int64).cuda()], dim=1)
+        else:
+            return torch.cat([input, torch.zeros((input.shape[0], padding), dtype=torch.int64)], dim=1)
         # Now input can be divided into full blocks
     return input
 
 
-def padToBlockSizeDimZero(input, block_size):
+def padToBlockSizeDimZero(input, block_size, cuda):
     if input.shape[0] % block_size != 0:
         # We need to pad here
         padding = block_size - (input.shape[0] % block_size)
-        return torch.cat([input, torch.zeros((padding, input.shape[1]), dtype=torch.int64).cuda()], dim=0)
+        if cuda:
+            return torch.cat([input, torch.zeros((padding, input.shape[1]), dtype=torch.int64).cuda()], dim=0)
+        else:
+            return torch.cat([input, torch.zeros((padding, input.shape[1]), dtype=torch.int64)], dim=0)
         # Now input can be divided into full blocks
     return input

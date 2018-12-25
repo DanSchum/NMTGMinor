@@ -170,7 +170,7 @@ class XETrainer(BaseTrainer):
                 targets = batch.get('target_output')
 
 
-                targets = padToBlockSizeDimZero(targets, self.opt.block_size)
+                targets = padToBlockSizeDimZero(targets, self.opt.block_size, self.cuda)
 
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False)
                 
@@ -225,13 +225,14 @@ class XETrainer(BaseTrainer):
             try:
                 # ~ batch = self.to_variable(samples[0])
                 batch = samples[0]
-                batch.cuda()
+                if self.cuda:
+                    batch.cuda()
             
                 outputs = self.model(batch)
                     
                 targets = batch.get('target_output')
 
-                targets = padToBlockSizeDimZero(targets, self.opt.block_size)
+                targets = padToBlockSizeDimZero(targets, self.opt.block_size, self.cuda)
 
                 batch_size = batch.size
                 
