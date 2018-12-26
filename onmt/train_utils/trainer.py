@@ -227,7 +227,10 @@ class XETrainer(BaseTrainer):
                 batch = samples[0]
                 if self.cuda:
                     batch.cuda()
-            
+
+                print('Max Memory allocated (After init): ' + str(torch.cuda.max_memory_allocated()))
+                print('Real Memory allocated (After init): ' + str(torch.cuda.memory_allocated()))
+
                 outputs = self.model(batch)
                     
                 targets = batch.get('target_output')
@@ -245,6 +248,9 @@ class XETrainer(BaseTrainer):
                                                              backward=True, tgt_mask=tgt_mask)
                 
                 loss_data = loss_output['nll']
+
+                #TODO: D.S: Remove this to stop processing just first Sample.
+                exit(1)
                 
             except RuntimeError as e:
                 if 'out of memory' in str(e):

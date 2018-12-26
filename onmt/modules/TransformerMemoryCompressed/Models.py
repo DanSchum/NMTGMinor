@@ -137,7 +137,8 @@ class TransformerEncoderMemoryCompressed(nn.Module):
             states_k = states_k.cuda()
             states_v = states_v.cuda()
 
-
+        print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
+        print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
 
         original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
@@ -774,9 +775,18 @@ class TransformerMemoryCompressed(NMTModel):
         src = src.transpose(0, 1)  # transpose to have batch first
         tgt = tgt.transpose(0, 1)
 
+        print('Max Memory allocated (Before encoder forward 1): ' + str(torch.cuda.max_memory_allocated()))
+        print('Real Memory allocated (Before encoder forward 1): ' + str(torch.cuda.memory_allocated()))
+
         context, src_mask = self.encoder(src, grow=grow)
 
+        print('Max Memory allocated (After encoder forward): ' + str(torch.cuda.max_memory_allocated()))
+        print('Real Memory allocated (After encoder forward): ' + str(torch.cuda.memory_allocated()))
+
         output, coverage = self.decoder(tgt, context, src, grow=grow)
+
+        print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
+        print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 
         output_dict = dict()
         output_dict['hiddens'] = output
