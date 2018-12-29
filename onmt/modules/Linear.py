@@ -6,6 +6,7 @@ import torch.nn.init as init
 import torch.nn.utils.weight_norm as WeightNorm
 import onmt 
 import torch.nn.functional as F
+from onmt.modules.StaticDropout import  StaticDropout
 
 
 def group_linear(linears, input, bias=False):

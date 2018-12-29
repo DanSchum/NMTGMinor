@@ -571,11 +571,11 @@ class LocalAttention(nn.Module):
         v = v.contiguous().view(len_key, b * self.h, self.d_head).transpose(0, 1)
 
         #D.S: Local attention starts here
-        current_position = torch.cat((torch.zeros((1, step_num * self.block_size, 1)).byte(),
+        current_position = torch.cat((torch.zeros((1, step_num.item() * self.block_size, 1)).byte(),
                        torch.ones((1, self.block_size, 1)).byte(),
                        torch.zeros((1,
-                                    ((len_query - ((step_num + 1) * self.block_size)) if
-                                     (len_query - ((step_num + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
+                                    ((len_query - ((step_num.item() + 1) * self.block_size)) if
+                                     (len_query - ((step_num.item() + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
 
         if self.cuda:
             current_position = current_position.cuda()

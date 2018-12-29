@@ -237,7 +237,7 @@ def build_model(opt, dicts):
 
         generator = onmt.modules.BaseModel.Generator(opt.model_size, dicts['tgt'].size())
 
-        model = TransformerMemoryCompressed(encoder, decoder, generator)
+        model = TransformerMemoryCompressed(encoder, decoder, generator, cuda)
 
         loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
 

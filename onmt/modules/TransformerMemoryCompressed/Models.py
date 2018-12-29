@@ -9,13 +9,14 @@ from onmt.modules.WordDrop import embedded_dropout
 from torch.utils.checkpoint import checkpoint
 from torch.autograd import Variable
 from onmt.utils import padToBlockSizeDimOne
+import onmt.Constants
 
 
 
 def custom_layer(module):
     def custom_forward(*args):
-        output = module(*args)
-        return output
+        return module(*args)
+        #return output
     return custom_forward
 
 
@@ -93,6 +94,9 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         #                                                                self.attn_dropout, self.residual_dropout)
         #                                     ])
 
+    def _slow_forward(self, *input, **kwargs):
+        print('test slow forward')
+
     def forward(self, input, **kwargs):
         """
         Inputs Shapes:
@@ -137,25 +141,25 @@ class TransformerEncoderMemoryCompressed(nn.Module):
             states_k = states_k.cuda()
             states_v = states_v.cuda()
 
-        print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
-        print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
+        if self.cuda:
+            print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
+            print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
 
         original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
+            step_tensor = torch.tensor(step_num)
             for i, layer in enumerate(self.layer_modules):
-
                 if type(layer) is EncoderLayerLocalAttention:
                     #D.S: Handle Local Attention Layer
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         #def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
                         #TODO: Check why checkpoint is not done even its activated
-                        context, prev_k, prev_v = checkpoint(custom_layer(layer), context,
-                                                             split, mask_src,
-                                                             step_num, states_k, states_v)
+                        context, prev_k, prev_v = checkpoint(custom_layer(layer), context, split, mask_src,
+                                                             step_tensor, states_k, states_v)
                     else:
-                        context, prev_k, prev_v = layer(context, split, mask_src, step_num,
-                                                        states_k, states_v)  # batch_size x len_src x d_model
+                        context, prev_k, prev_v = layer(context, split, mask_src,
+                                                        step_tensor, states_k, states_v)  # batch_size x len_src x d_model
 
 
                 elif type(layer) is EncoderLayerMemoryCompressed:
@@ -416,6 +420,7 @@ class TransformerDecoderMemoryCompressed(nn.Module):
 
         splits = torch.split(output, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
+            step_tensor = torch.tensor(step_num)
             for i, layer in enumerate(self.layer_modules):
 
                 if type(layer) is DecoderLayerLocalAttention:
@@ -424,9 +429,9 @@ class TransformerDecoderMemoryCompressed(nn.Module):
                         # def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
                         # TODO: Check why checkpoint is not done even its activated
                         output, prev_k, prev_v = checkpoint(custom_layer(layer), output,
-                                                             split, mask_tgt, mask_src, step_num, states_k, states_v)
+                                                             split, mask_tgt, mask_src, step_tensor, states_k, states_v)
                     else:
-                        output, prev_k, prev_v = layer(output, split, mask_tgt, mask_src, step_num,
+                        output, prev_k, prev_v = layer(output, split, mask_tgt, mask_src, step_tensor,
                                                         states_k, states_v)  # batch_size x len_src x d_model
 
 
@@ -758,6 +763,11 @@ class TransformerDecoder(nn.Module):
 class TransformerMemoryCompressed(NMTModel):
     """Main model in 'Attention is all you need' """
 
+    def __init__(self, encoder, decoder, generator, cuda):
+        super(TransformerMemoryCompressed, self).__init__(encoder, decoder, generator)
+        self.cuda = cuda
+
+
     def forward(self, batch, grow=False):
         """
         Inputs Shapes:
@@ -775,18 +785,21 @@ class TransformerMemoryCompressed(NMTModel):
         src = src.transpose(0, 1)  # transpose to have batch first
         tgt = tgt.transpose(0, 1)
 
-        print('Max Memory allocated (Before encoder forward 1): ' + str(torch.cuda.max_memory_allocated()))
-        print('Real Memory allocated (Before encoder forward 1): ' + str(torch.cuda.memory_allocated()))
+        if self.cuda:
+            print('Max Memory allocated (Before encoder forward 1): ' + str(torch.cuda.max_memory_allocated()))
+            print('Real Memory allocated (Before encoder forward 1): ' + str(torch.cuda.memory_allocated()))
 
         context, src_mask = self.encoder(src, grow=grow)
 
-        print('Max Memory allocated (After encoder forward): ' + str(torch.cuda.max_memory_allocated()))
-        print('Real Memory allocated (After encoder forward): ' + str(torch.cuda.memory_allocated()))
+        if self.cuda:
+            print('Max Memory allocated (After encoder forward): ' + str(torch.cuda.max_memory_allocated()))
+            print('Real Memory allocated (After encoder forward): ' + str(torch.cuda.memory_allocated()))
 
         output, coverage = self.decoder(tgt, context, src, grow=grow)
 
-        print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
-        print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
+        if self.cuda:
+            print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
+            print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 
         output_dict = dict()
         output_dict['hiddens'] = output

@@ -1,10 +1,9 @@
-
-
 import torch
 import torch.autograd as autograd
 import torch.optim as optim
 import torch.nn as nn
 import onmt
+from onmt.modules.StaticDropout import  StaticDropout
 from onmt.modules.Bottle import Bottle
 
 
