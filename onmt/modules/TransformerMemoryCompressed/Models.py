@@ -46,7 +46,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         self.compression_factor = 2
         self.compression_function = 1
         self.block_size = opt.block_size
-        self.cuda = (len(opt.gpus) >= 1)
+        self.cudaBool = (len(opt.gpus) >= 1)
 
 
         self.word_lut = nn.Embedding(dicts.size(),
@@ -71,7 +71,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
     def build_modules(self):
 
         self.layer_modules = nn.ModuleList([EncoderLayerLocalAttention(self.n_heads, self.model_size, self.dropout,
-                                                                       self.inner_size, self.block_size, self.cuda,
+                                                                       self.inner_size, self.block_size, self.cudaBool,
                                                                        self.attn_dropout, self.residual_dropout) for _
                                             in
                                             range(self.layers)])
@@ -109,7 +109,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         """
 
         #D.S: Here padding to fit in blocks is made
-        input = padToBlockSizeDimOne(input, self.block_size, self.cuda)
+        input = padToBlockSizeDimOne(input, self.block_size, self.cudaBool)
 
 
         """ Embedding: batch_size x len_src x d_model """
@@ -137,11 +137,11 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         states_v = torch.zeros(
             (self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
 
-        if self.cuda:
+        if self.cudaBool:
             states_k = states_k.cuda()
             states_v = states_v.cuda()
 
-        if self.cuda:
+        if self.cudaBool:
             print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
 
