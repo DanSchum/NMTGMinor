@@ -765,7 +765,7 @@ class TransformerMemoryCompressed(NMTModel):
 
     def __init__(self, encoder, decoder, generator, cuda):
         super(TransformerMemoryCompressed, self).__init__(encoder, decoder, generator)
-        self.cuda = cuda
+        self.cudaBool = cuda
 
 
     def forward(self, batch, grow=False):
@@ -785,19 +785,19 @@ class TransformerMemoryCompressed(NMTModel):
         src = src.transpose(0, 1)  # transpose to have batch first
         tgt = tgt.transpose(0, 1)
 
-        if self.cuda:
+        if self.cudaBool:
             print('Max Memory allocated (Before encoder forward 1): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward 1): ' + str(torch.cuda.memory_allocated()))
 
         context, src_mask = self.encoder(src, grow=grow)
 
-        if self.cuda:
+        if self.cudaBool:
             print('Max Memory allocated (After encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (After encoder forward): ' + str(torch.cuda.memory_allocated()))
 
         output, coverage = self.decoder(tgt, context, src, grow=grow)
 
-        if self.cuda:
+        if self.cudaBool:
             print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 
