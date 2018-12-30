@@ -564,10 +564,17 @@ class LocalAttention(nn.Module):
         shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
         proj_key, proj_value = shared_kv.chunk(2, dim=-1)
 
-        q, k, v = proj_query, proj_key, proj_value
+        q, k, v = proj_query, proj_key, proj_value #Dimensions: (Block_Size x Batch_Sentences x Embedding_Size)
+        #Batch_Sentence:
         # prepare the shape for applying softmax
         q = q.contiguous().view(len_query, b * self.h, self.d_head).transpose(0, 1)
+        #Dimension before Transpose: (len_query (without splitting in blocks) x (b * h) x (Embedding_Size / h))
+        #len_query is not splitted in blocks
+        #b*h (h = Heads of Multihead Attention, b = Amount of Sentences maintained in parallel (Batch Size Sentences))
+        #Embedding_Size / h: For each Head the Embedding Size is reduced. Sum of all reduced Embedding results in Full Word Embedding Size
+        #Dimensions after Transpose: ((b*h) x len_query, (Embedding_Size/h))
         k = k.contiguous().view(len_key, b * self.h, self.d_head).transpose(0, 1)
+        #Dimensions after transpose: ((b*h) x (len_key (Block_Size)) x (Embedding_Size / h))
         v = v.contiguous().view(len_key, b * self.h, self.d_head).transpose(0, 1)
 
         #D.S: Local attention starts here
@@ -576,29 +583,41 @@ class LocalAttention(nn.Module):
                        torch.zeros((1,
                                     ((len_query - ((step_num.item() + 1) * self.block_size)) if
                                      (len_query - ((step_num.item() + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
+        #Creates tensor (1 x len_query (Original Words Batch Size) x 1): With Dim 1 containing the index of the
+        # current block to be set in the in the complete Words Batch Tensor
+
 
         if self.cuda:
             current_position = current_position.cuda()
-            k = torch.cat([k, torch.zeros(k.shape[0],(prev_k.shape[1]-k.shape[1]),k.shape[2]).cuda()], dim=1)
-            v = torch.cat([v, torch.zeros(v.shape[0],(prev_v.shape[1]-v.shape[1]),v.shape[2]).cuda()], dim=1)
-            q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2]).cuda()], dim=1)
+            k = torch.cat([k, torch.zeros(k.shape[0], (prev_k.shape[1] - k.shape[1]), k.shape[2]).cuda()], dim=1)
+            #Reshape the k & v Tensor at Dim 1 to have the full size of word batch from the block size. This is needed to use where operation on this Dimension
+            # because the Dimension needs to be the same (Compare from previous and current k & v Tensors)
+            v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2]).cuda()], dim=1)
+            #q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2]).cuda()], dim=1)
         else:
             current_position = current_position
             k = torch.cat([k, torch.zeros(k.shape[0], (prev_k.shape[1] - k.shape[1]), k.shape[2])], dim=1)
             v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2])], dim=1)
-            q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2])], dim=1)
+            #q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2])], dim=1)
 
         k = torch.where(current_position, k, prev_k)
+        #Use indizies from current_position to select from current k Tensor or previous k Tensor)
         v = torch.where(current_position, v, prev_v)
+        #Dimensions: (b*h) x (Batch Size Words) x (Embedding_Size / h)
 
         q = q * (self.d_head ** -0.5)
 
 
         # get dotproduct softmax attns for each head
-        attns = torch.bmm(q, k.transpose(1, 2))  # batch_size*h x len_query x len_key
+        attns = torch.bmm(q, k.transpose(1, 2))
+        #q = ((b*h) x (Batch_Size_Words) x (Embedding/h))
+        #After Transpose: k = ((b*h) x (Embedding/h) x (Batch_Size_Words))
+        #attns = ((b*h) x (Batch_Size_Words) x Batch_Size_Words)
 
         attns = attns.view(b, self.h, len_query, len_query)
+        #Attns = (b x h x Batch_Size_Words x Batch_Size_Words)
         mask_ = mask.unsqueeze(-3)
+        #mask_ = (b x 1 x 1 x Batch_Size_Words)
         # FP16 support: cast to float and back
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
         attns = F.softmax(attns.float(), dim=-1).type_as(attns)
