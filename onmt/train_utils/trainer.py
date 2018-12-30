@@ -316,6 +316,7 @@ class XETrainer(BaseTrainer):
                            report_tgt_words/(time.time()-start),
                            grad_norm,
                            str(datetime.timedelta(seconds=int(time.time() - self.start_time)))))
+                    sys.stdout.flush()
 
                     report_loss, report_tgt_words = 0, 0
                     report_src_words = 0
