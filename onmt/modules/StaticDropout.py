@@ -67,10 +67,11 @@ class StaticDropout(nn.Module):
                     output = input * self.noise
                     self.noise = None
                     self.noise_created = False
-                except RuntimeError as e:
+                except IndexError as e:
                     print('Input: ' + str(input.shape))
                     print('Noise: ' + str(self.noise.shape))
                     print(e)
+                    raise e
             else:
                 self.gen_noise(input)
                 self.noise_created = True
