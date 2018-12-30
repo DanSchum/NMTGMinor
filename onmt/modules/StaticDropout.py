@@ -61,11 +61,16 @@ class StaticDropout(nn.Module):
         if self.training:
             # First time or twice ?
             if self.noise_created == True:
-                if input.shape[3] != self.noise.shape[3]:
-                    self.gen_noise(input)
-                output = input * self.noise
-                self.noise = None
-                self.noise_created = False
+                try:
+                    if input.shape[3] != self.noise.shape[3]:
+                        self.gen_noise(input)
+                    output = input * self.noise
+                    self.noise = None
+                    self.noise_created = False
+                except RuntimeError as e:
+                    print('Input: ' + str(input.shape))
+                    print('Noise: ' + str(self.noise.shape))
+                    print(e)
             else:
                 self.gen_noise(input)
                 self.noise_created = True
