@@ -100,7 +100,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
     def forward(self, input, **kwargs):
         """
         Inputs Shapes:
-            input: batch_size x len_src (wanna tranpose)
+            input: batch_sizUse half precision traininge x len_src (wanna tranpose)
 
         Outputs Shapes:
             out: batch_size x len_src x d_model
@@ -141,7 +141,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
             states_k = states_k.cuda()
             states_v = states_v.cuda()
 
-        if self.cudaBool:
+        if self.cudaBool and onmt.Constants.debug:
             print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
 
@@ -785,19 +785,19 @@ class TransformerMemoryCompressed(NMTModel):
         src = src.transpose(0, 1)  # transpose to have batch first
         tgt = tgt.transpose(0, 1)
 
-        if self.cudaBool:
+        if self.cudaBool and onmt.Constants.debug:
             print('Max Memory allocated (Before encoder forward 1): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward 1): ' + str(torch.cuda.memory_allocated()))
 
         context, src_mask = self.encoder(src, grow=grow)
 
-        if self.cudaBool:
+        if self.cudaBool and onmt.Constants.debug:
             print('Max Memory allocated (After encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (After encoder forward): ' + str(torch.cuda.memory_allocated()))
 
         output, coverage = self.decoder(tgt, context, src, grow=grow)
 
-        if self.cudaBool:
+        if self.cudaBool and onmt.Constants.debug:
             print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 

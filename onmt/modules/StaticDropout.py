@@ -68,6 +68,7 @@ class StaticDropout(nn.Module):
                     self.noise = None
                     self.noise_created = False
                 except IndexError as e:
+                    #TODO: D.S. Remove whole try/catch and prints 
                     print('Input: ' + str(input.shape))
                     print('Noise: ' + str(self.noise.shape))
                     print(e)

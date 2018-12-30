@@ -15,3 +15,4 @@ residual_type = 'regular'
 max_position_length = 512
 
 cuda = 0
+debug = 0

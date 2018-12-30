@@ -49,7 +49,7 @@ def make_parser(parser):
     parser.add_argument('-attn_dropout', type=float, default=0.1,
                         help='Dropout probability; applied on multi-head attention.')   
     parser.add_argument('-emb_dropout', type=float, default=0.1,
-                        help='Dropout probability; applied on top of embedding.')    
+                        help='Dropout probability; applied on top of embedding.')
     parser.add_argument('-residual_dropout', type=float, default=0.2,
                         help='Dropout probability; applied on residual connection.')    
     parser.add_argument('-weight_norm', action='store_true',
@@ -197,5 +197,7 @@ def make_parser(parser):
     #D.S: Added for memory compression
     parser.add_argument('-block_size', type=int, default=100,
                         help="Block size used to split context in self attention to reduce memory usage per iteration.")
+    parser.add_argument('-debug', action='store_true',
+                        help='Activate this for debugging mode')
 
     return parser

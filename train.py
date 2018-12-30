@@ -32,6 +32,7 @@ onmt.Constants.weight_norm = opt.weight_norm
 onmt.Constants.checkpointing = opt.checkpointing
 onmt.Constants.max_position_length = opt.max_position_length
 onmt.Constants.cuda = (len(opt.gpus) >= 1)
+onmt.Constants.debug = opt.debug
 
 # Use static dropout if checkpointing > 0
 if opt.checkpointing > 0:
