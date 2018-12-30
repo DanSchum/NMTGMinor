@@ -228,7 +228,7 @@ class XETrainer(BaseTrainer):
                 if self.cuda:
                     batch.cuda()
 
-                if self.cuda:
+                if self.cuda and onmt.Constants.debug:
                     print('Max Memory allocated (After init): ' + str(torch.cuda.max_memory_allocated()))
                     print('Real Memory allocated (After init): ' + str(torch.cuda.memory_allocated()))
 
