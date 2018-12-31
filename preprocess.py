@@ -302,8 +302,8 @@ def main():
    
     valid['src'], valid['tgt'] = makeData(opt.valid_src, opt.valid_tgt,
                                           dicts['src'], dicts['tgt'], 
-                                          max_src_length=max(1000,opt.src_seq_length),
-                                          max_tgt_length=max(1000,opt.tgt_seq_length),
+                                          max_src_length=max(999,opt.src_seq_length),
+                                          max_tgt_length=max(999,opt.tgt_seq_length),
                                           input_type=opt.input_type)
     
     if opt.format == 'raw':                                  
