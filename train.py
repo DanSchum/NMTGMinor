@@ -15,6 +15,8 @@ from onmt.train_utils.fp16_trainer import FP16XETrainer
 from onmt.train_utils.multiGPUtrainer import MultiGPUXETrainer
 from onmt.train_utils.fp16_vi_trainer import VariationalTrainer
 from onmt.ModelConstructor import build_model, init_model_parameters
+from TelegramSendMyselfMessages import TelegramSendMyselfMessages
+
 
 parser = argparse.ArgumentParser(description='train.py')
 onmt.Markdown.add_md_help_argument(parser)
@@ -135,4 +137,13 @@ def main():
     trainer.run(save_file=opt.load_from)
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        try:
+            telegramMessenger = TelegramSendMyselfMessages.TelegramSendMyselfMessages()
+            telegramMessenger.sendMessageToMe('Error in Training occured.  Message: ' + str(e))
+        except Exception as e:
+            print(e)
+        raise e
+
