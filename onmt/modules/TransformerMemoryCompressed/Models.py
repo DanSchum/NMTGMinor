@@ -374,7 +374,7 @@ class TransformerDecoderMemoryCompressed(nn.Module):
     def forward(self, input, context, src, **kwargs):
         """
         Inputs Shapes:
-            input: (Variable) batch_size x len_tgt (wanna tranpose)
+            input: (Variable) batch_size x len_tgt (wanna tranpose) (D.S: Batch_Size_Sentence x (Block_Size??)
             context: (Variable) batch_size x len_src x d_model
             mask_src (Tensor) batch_size x len_src
         Outputs Shapes:
