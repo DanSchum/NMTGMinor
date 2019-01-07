@@ -44,11 +44,14 @@ def checkpoint_paths(path, pattern=r'model_ppl_(\d+).(\d+)\_e(\d+).(\d+).pt'):
     """
     pt_regexp = re.compile(pattern)
     files = os.listdir(path)
+    filesChecked = []
     
     # sort py perplexity (ascending)
-    print(str(files))
-    if len(files) > 0:
-        files = sorted(files, key=lambda s: float(s.split("_")[2]))
+    for s in files:
+        if '.pt' in s:
+            filesChecked.append(s)
+
+    files = sorted(filesChecked, key=lambda s: float(s.split("_")[2]))
 
     entries = []
     for i, f in enumerate(files):
