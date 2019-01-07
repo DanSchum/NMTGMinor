@@ -362,6 +362,7 @@ class XETrainer(BaseTrainer):
             batchOrder = None
             iteration = 0
             print('Initializing model parameters')
+            sys.stdout.flush()
             init_model_parameters(model, opt)
             resume=False
         
