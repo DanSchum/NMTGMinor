@@ -199,5 +199,7 @@ def make_parser(parser):
                         help="Block size used to split context in self attention to reduce memory usage per iteration.")
     parser.add_argument('-debug', action='store_true',
                         help='Activate this for debugging mode')
+    parser.add_argument('-encoderLayers', type=int, default=2,
+                        help='Number of layers on encoder side')
 
     return parser

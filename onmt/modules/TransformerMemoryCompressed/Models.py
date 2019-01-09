@@ -48,6 +48,8 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         self.block_size = opt.block_size
         self.cudaBool = (len(opt.gpus) >= 1)
 
+        self.encoderLayers = opt.encoderLayers
+
 
         self.word_lut = nn.Embedding(dicts.size(),
                                      self.model_size,
@@ -74,7 +76,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
                                                                        self.inner_size, self.block_size, self.cudaBool,
                                                                        self.attn_dropout, self.residual_dropout) for _
                                             in
-                                            range(self.layers)])
+                                            range(self.encoderLayers)])
 
         # self.layer_modules = nn.ModuleList([EncoderLayerLocalAttention(self.n_heads, self.model_size,
         #                                                                self.dropout, self.inner_size,
