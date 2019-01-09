@@ -232,13 +232,14 @@ class PositionalEncoding(nn.Module):
         out:   batch_size x len_seq x d_model
         
     """
-    def __init__(self, d_model, p=0, len_max=512):
+    def __init__(self, d_model, cuda=0, p=0, len_max=512):
         # save a fixed positional embedding matrix up to len_max,
         # so that no need to recreate it everytime
         super(PositionalEncoding, self).__init__()
         self.len_max=len_max
         self.d_model = d_model
         self.data_type = None
+        self.cuda = cuda
         
         self.renew(len_max)
         
@@ -272,6 +273,11 @@ class PositionalEncoding(nn.Module):
         
         if len_seq > self.len_max:
             self.renew(len_seq)
+
+
+        if self.cuda:
+            word_emb = word_emb.cuda()
+            self.pos_emb = self.pos_emb.cuda()
         
         if word_emb.size(1) == len_seq:
             out = word_emb + Variable(self.pos_emb[:len_seq, :], requires_grad=False)

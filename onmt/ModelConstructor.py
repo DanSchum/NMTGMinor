@@ -72,7 +72,7 @@ def build_model(opt, dicts):
         onmt.Constants.init_value = opt.param_init
         
         if opt.time == 'positional_encoding':
-            positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+            positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         else:
             positional_encoder = None
         
@@ -96,7 +96,7 @@ def build_model(opt, dicts):
         
         
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+        positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         #~ positional_encoder = None
         
         encoder = StochasticTransformerEncoder(opt, dicts['src'], positional_encoder)
@@ -116,7 +116,7 @@ def build_model(opt, dicts):
         onmt.Constants.weight_norm = opt.weight_norm
         onmt.Constants.init_value = opt.param_init
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN )
+        positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN )
         
         encoder = FCTransformerEncoder(opt, dicts['src'], positional_encoder)
         decoder = FCTransformerDecoder(opt, dicts['tgt'], positional_encoder)
@@ -133,7 +133,7 @@ def build_model(opt, dicts):
         onmt.Constants.weight_norm = opt.weight_norm
         onmt.Constants.init_value = opt.param_init
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+        positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         
         encoder = ParallelTransformerEncoder(opt, dicts['src'], positional_encoder)
         decoder = ParallelTransformerDecoder(opt, dicts['tgt'], positional_encoder)
@@ -152,7 +152,7 @@ def build_model(opt, dicts):
         onmt.Constants.weight_norm = opt.weight_norm
         onmt.Constants.init_value = opt.param_init
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+        positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         time_encoder = TimeEncoding(opt.model_size, len_max=32)
 
         
@@ -175,7 +175,7 @@ def build_model(opt, dicts):
         # ~ onmt.Constants.weight_norm = opt.weight_norm
         # ~ onmt.Constants.init_value = opt.param_init
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+        positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         
         encoder = TransformerEncoder(opt, dicts['src'], positional_encoder)
         decoder = VariationalDecoder(opt, dicts['tgt'], positional_encoder)
@@ -204,7 +204,7 @@ def build_model(opt, dicts):
         # ~ onmt.Constants.weight_norm = opt.weight_norm
         # ~ onmt.Constants.init_value = opt.param_init
         
-        positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+        positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         
         encoder = MixtureEncoder(opt, dicts['src'], positional_encoder)
         decoder = MixtureDecoder(opt, dicts['tgt'], positional_encoder)
@@ -228,7 +228,7 @@ def build_model(opt, dicts):
         onmt.Constants.init_value = opt.param_init
 
         if opt.time == 'positional_encoding':
-            positional_encoder = PositionalEncoding(opt.model_size, cuda, len_max=MAX_LEN)
+            positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         else:
             positional_encoder = None
 
