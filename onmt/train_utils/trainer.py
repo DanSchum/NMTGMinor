@@ -170,8 +170,8 @@ class XETrainer(BaseTrainer):
                 # ~ targets = batch[1][1:]
                 targets = batch.get('target_output')
 
-
-                targets = padToBlockSizeDimZero(targets, self.opt.block_size, self.cuda)
+                if self.opt.model == 'transformerMemoryCompressed':
+                    targets = padToBlockSizeDimZero(targets, self.opt.block_size, self.cuda)
 
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False)
                 
