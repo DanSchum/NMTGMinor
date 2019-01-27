@@ -99,7 +99,7 @@ def main():
     opt = parser.parse_args()
     opt.cuda = opt.gpu > -1
 
-    onmt.Constants.cuda = (len(opt.gpus) >= 1)
+    onmt.Constants.cuda = (len(opt.gpu) >= 1)
 
     if opt.cuda:
         torch.cuda.set_device(opt.gpu)
