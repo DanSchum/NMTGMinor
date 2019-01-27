@@ -3,6 +3,7 @@ import numpy as np
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
+import onmt.Constants
 
 def embedded_dropout(embed, words, dropout=0.1, scale=None):
     if dropout > 0:
@@ -17,6 +18,9 @@ def embedded_dropout(embed, words, dropout=0.1, scale=None):
     padding_idx = embed.padding_idx
     if padding_idx is None:
             padding_idx = -1
+
+    if onmt.Constants.cuda == 1:
+        padding_idx = padding_idx.cuda()
     
     X =  F.embedding(
             words, masked_embed_weight, padding_idx, embed.max_norm,
