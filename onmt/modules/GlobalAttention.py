@@ -601,9 +601,6 @@ class LocalAttention(nn.Module):
             v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2])], dim=1)
             #q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2])], dim=1)
 
-        if k.shape[1] == 400:
-            print('Error found')
-
         k = torch.where(current_position, k, prev_k)
         #Use indizies from current_position to select from current k Tensor or previous k Tensor)
         v = torch.where(current_position, v, prev_v)
