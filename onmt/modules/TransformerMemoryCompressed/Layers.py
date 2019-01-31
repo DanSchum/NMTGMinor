@@ -331,10 +331,24 @@ class EncoderLayerLocalAttention(nn.Module):
         self.feedforward = Bottle(feedforward)
 
     def forward(self, query, split, attn_mask, step_num, prev_k, prev_v, pad_mask=None):
+        '''
+
+        :param query: Is the context value from Models implementation (Dim: Batch_Size_Words x Batch_Size_Sentence x Embedding_Size)
+        :param split: Contains the split values, which iterate through the src embedding (Dim: Block_Size x Batch_Size_Sentence x Embedding_Size)
+        :param attn_mask:
+        :param step_num:
+        :param prev_k:
+        :param prev_v:
+        :param pad_mask:
+        :return:
+        '''
         pad_mask = None
         query = self.preprocess_attn(query)
         split = self.preprocess_attn(split)
         out, k, v = self.multihead(query, split, split, attn_mask, step_num, prev_k, prev_v)
+        #Out: Contains Context (Dim: Batch_Size_Words x Batch_Size_Sentence x Embedding_Size)
+        #k & v: Contains k & v values including all last splits (Dim: heads x Batch_Size_Words x (Embedding_Size / heads))
+        #k & v: At Dim (1) - Batch_Size_Words: The Values are added from split, concatenated with the previous values from previous splits
         input = self.postprocess_attn(out, query)
 
         """ Feed forward layer 
@@ -444,7 +458,7 @@ class DecoderLayerLocalAttention(nn.Module):
         self.preprocess_ffn = PrePostProcessing(d_model, p, sequence='n')
         self.postprocess_ffn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
 
-        self.multihead_tgt = LocalAttention(h, d_model, block_size, self.cuda, attn_p=attn_p, static=onmt.Constants.static, share=1)
+        self.multihead_tgt = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=1)
         self.multihead_src = LocalAttention(h, d_model, block_size, self.cuda, attn_p=attn_p, static=onmt.Constants.static, share=2)
 
         if onmt.Constants.activation_layer == 'linear_relu_linear':
@@ -468,7 +482,7 @@ class DecoderLayerLocalAttention(nn.Module):
         self_context = query
 
         #D.S. Set to local attention layer
-        out, k, v = self.multihead_tgt(query, self_context, self_context, mask_tgt, step_num, prev_k, prev_v)
+        out, coverage = self.multihead_tgt(query, self_context, self_context, mask_tgt)
 
         if residual_dropout > 0:
             input_ = F.dropout(input, residual_dropout, self.training, False)

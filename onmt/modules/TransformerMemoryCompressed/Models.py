@@ -147,7 +147,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
             print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
 
-        original_batch_size = context.shape[0]
+        #original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
             step_tensor = torch.tensor(step_num)
@@ -156,29 +156,21 @@ class TransformerEncoderMemoryCompressed(nn.Module):
                     #D.S: Handle Local Attention Layer
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         #def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
-                        #TODO: Check why checkpoint is not done even its activated
+                        #Context is used as v-Values, which are mulitplied with the attention (attn = q * k)
                         context, prev_k, prev_v = checkpoint(custom_layer(layer), context, split, mask_src,
                                                              step_tensor, states_k, states_v)
+                        #Return values:
+                        #Context contains
+                        #prev_k & prev_v contains k anv v values from all previous splits, which are needed for the
+                        # next split in where(...) operation, to concat the previous k & v values with the current one (From current split)
                     else:
                         context, prev_k, prev_v = layer(context, split, mask_src,
                                                         step_tensor, states_k, states_v)  # batch_size x len_src x d_model
-
-
-                elif type(layer) is EncoderLayerMemoryCompressed:
-                    #D.S: Handle Memory Compressed Layer
-                    if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
-                        # def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
-                        context, prev_k, prev_v = checkpoint(custom_layer(layer), context, mask_src)
-
-                    else:
-                        context, prev_k, prev_v = layer(context, mask_src)  # batch_size x len_src x d_model
-
                 else:
                     raise NotImplementedError
 
-            states_k = prev_k
-            states_v = prev_v
-
+                states_k = prev_k #Update states with k & v values from previous splits
+                states_v = prev_v
 
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done
@@ -400,8 +392,8 @@ class TransformerDecoderMemoryCompressed(nn.Module):
             emb = emb[0]
         emb = self.preprocess_layer(emb)
 
-        #mask_src = src.eq(onmt.Constants.PAD).unsqueeze(1)
-        mask_src = torch.split(src, self.block_size, dim=-1)[0].eq(onmt.Constants.PAD).unsqueeze(1)
+        mask_src = src.eq(onmt.Constants.PAD).unsqueeze(1)
+        #mask_src = torch.split(src, self.block_size, dim=-1)[0].eq(onmt.Constants.PAD).unsqueeze(1)
 
         pad_mask_src = src.data.ne(onmt.Constants.PAD)
 
@@ -413,14 +405,15 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         # D.S: Context is splitted in seperate parts
         batch_sentences = output.shape[1]
 
-        states_k = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
-        states_v = torch.zeros((self.n_heads * batch_sentences, output.shape[0], (self.model_size // self.n_heads)))
+        states_k = torch.zeros((self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
+        states_v = torch.zeros((self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
 
         if self.cuda:
             states_k = states_k.cuda()
             states_v = states_v.cuda()
 
-        splits = torch.split(output, self.block_size, dim=0)
+        #TODO: D.S. Is the split on output correct? Should here the split on context/input be done?
+        splits = torch.split(context, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
             step_tensor = torch.tensor(step_num)
             for i, layer in enumerate(self.layer_modules):
@@ -429,29 +422,19 @@ class TransformerDecoderMemoryCompressed(nn.Module):
                     # D.S: Handle Local Attention Layer
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         # def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
-                        # TODO: Check why checkpoint is not done even its activated
+                        #output, prev_k, prev_v = checkpoint(custom_layer(layer), output,
+                        #                                     split, mask_tgt, mask_src, step_tensor, states_k, states_v)
                         output, prev_k, prev_v = checkpoint(custom_layer(layer), output,
-                                                             split, mask_tgt, mask_src, step_tensor, states_k, states_v)
+                                                            split, mask_tgt, mask_src, step_tensor, states_k, states_v)
                     else:
                         output, prev_k, prev_v = layer(output, split, mask_tgt, mask_src, step_tensor,
                                                         states_k, states_v)  # batch_size x len_src x d_model
-
-
-                elif type(layer) is EncoderLayerMemoryCompressed:
-                    # D.S: Handle Memory Compressed Layer
-                    if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
-                        # def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
-                        output, prev_k, prev_v = checkpoint(custom_layer(layer), output, mask_src)
-
-                    else:
-                        output, prev_k, prev_v = layer(output, mask_src)  # batch_size x len_src x d_model
-
                 else:
                     raise NotImplementedError
 
-            #Write states from last split to input of next split
-            states_k = prev_k
-            states_v = prev_v
+                #Write states from last split to input of next split
+                states_k = prev_k
+                states_v = prev_v
 
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done

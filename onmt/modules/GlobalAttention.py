@@ -555,10 +555,10 @@ class LocalAttention(nn.Module):
 
         len_query, b = query.size(0), query.size(1) #batch_size_words x batch_size_sentence
         len_key, b_ = key.size(0), key.size(1)
+        len_prev_key = prev_k.size(1)
 
         key_mask = value_mask
 
-        # batch_size*h x len_query x d_head
         # project inputs to multi-heads
         proj_query = self.fc_query(query)  # batch_size x len_query x h*d_head
         shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
@@ -578,11 +578,12 @@ class LocalAttention(nn.Module):
         v = v.contiguous().view(len_key, b * self.h, self.d_head).transpose(0, 1)
 
         #D.S: Local attention starts here
-        current_position = torch.cat((torch.zeros((1, step_num.item() * self.block_size, 1)).byte(),
-                       torch.ones((1, self.block_size, 1)).byte(),
-                       torch.zeros((1,
-                                    ((len_query - ((step_num.item() + 1) * self.block_size)) if
-                                     (len_query - ((step_num.item() + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
+        current_position = torch.cat(
+                        (torch.zeros((1, step_num.item() * self.block_size, 1)).byte(),
+                        torch.ones((1, self.block_size, 1)).byte(),
+                        torch.zeros((1,
+                                    ((len_prev_key - ((step_num.item() + 1) * self.block_size)) if
+                                     (len_prev_key - ((step_num.item() + 1) * self.block_size)) >= 0 else 0), 1)).byte()), dim=1)
         #Creates tensor (1 x len_query (Original Words Batch Size) x 1): With Dim 1 containing the index of the
         # current block to be set in the in the complete Words Batch Tensor
 
@@ -600,6 +601,9 @@ class LocalAttention(nn.Module):
             v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2])], dim=1)
             #q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2])], dim=1)
 
+        if k.shape[1] == 400:
+            print('Error found')
+
         k = torch.where(current_position, k, prev_k)
         #Use indizies from current_position to select from current k Tensor or previous k Tensor)
         v = torch.where(current_position, v, prev_v)
@@ -614,17 +618,18 @@ class LocalAttention(nn.Module):
         #After Transpose: k = ((b*h) x (Embedding/h) x (Batch_Size_Words))
         #attns = ((b*h) x (Batch_Size_Words) x Batch_Size_Words)
 
-        attns = attns.view(b, self.h, len_query, len_query)
-        #Attns = (b x h x Batch_Size_Words x Batch_Size_Words)
+        #attns = attns.view(b, self.h, len_query, len_query)  #Attns = (b x h x Batch_Size_Words x Batch_Size_Words)
+        attns = attns.view(b, self.h, len_query, len_prev_key)  #Attns = (b x h x Block_Size x Batch_Size_Words)
         mask_ = mask.unsqueeze(-3)
         #mask_ = (b x 1 x 1 x Batch_Size_Words)
         # FP16 support: cast to float and back
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
+        #masked_fill fills -inf float values in all field of attention tensor, where mask = 1
         attns = F.softmax(attns.float(), dim=-1).type_as(attns)
         # return mean attention from all heads as coverage
         #coverage = torch.mean(attns, dim=1)
         attns = self.attn_dropout(attns)
-        attns = attns.view(b * self.h, len_query, len_query)
+        attns = attns.view(b * self.h, len_query, len_prev_key)
 
         # apply attns on value
         out = torch.bmm(attns, v)  # batch_size*h x len_query x d_head
