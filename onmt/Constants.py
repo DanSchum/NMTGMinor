@@ -16,3 +16,9 @@ max_position_length = 512
 
 cuda = 0
 debug = 0
+cudaActivated = 0
+
+#D.S: Added for Coverage Mechanism
+weightAvgProb = 0.00
+weightWordFrequency = 0.00
+weightStdSoftmax = 1 - (weightAvgProb + weightWordFrequency)

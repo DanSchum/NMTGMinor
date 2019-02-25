@@ -8,6 +8,8 @@ import math
 import numpy
 import sys
 
+from onmt.Constants import cudaActivated
+
 parser = argparse.ArgumentParser(description='translate.py')
 onmt.Markdown.add_md_help_argument(parser)
 
@@ -98,6 +100,8 @@ def getSentenceFromTokens(tokens, input_type):
 def main():
     opt = parser.parse_args()
     opt.cuda = opt.gpu > -1
+    onmt.Constants.cudaActivated = opt.gpu > -1
+
 
     onmt.Constants.cuda = opt.gpu > -1
 
@@ -143,7 +147,7 @@ def main():
             if opt.input_type == 'word':
                 srcTokens = line.split()
                 srcBatch += [srcTokens]
-                if tgtF:
+                if tgtF: #Checks if target batch is there. In normal translation, this should be empty
                     tgtTokens = tgtF.readline().split() if tgtF else None
                     tgtBatch += [tgtTokens]
             elif opt.input_type == 'char':

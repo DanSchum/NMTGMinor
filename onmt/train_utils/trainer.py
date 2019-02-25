@@ -233,9 +233,9 @@ class XETrainer(BaseTrainer):
                     print('Max Memory allocated (After init): ' + str(torch.cuda.max_memory_allocated()))
                     print('Real Memory allocated (After init): ' + str(torch.cuda.memory_allocated()))
 
-                outputs = self.model(batch)
+                outputs = self.model(batch) #Calculate outputs of model (for batch)
                     
-                targets = batch.get('target_output')
+                targets = batch.get('target_output') #Get ground truth
 
                 targets = padToBlockSizeDimZero(targets, self.opt.block_size, self.cuda)
 
@@ -274,7 +274,7 @@ class XETrainer(BaseTrainer):
                 #~ if counter == opt.virtual_gpu:
                 #~ if counter >= opt.batch_size_update:
                 
-                if num_accumulated_words >= opt.batch_size_update * 0.95:
+                if num_accumulated_words >= opt.batch_size_update * 0.95: #Hyperparameter changes amount of updates
                     grad_denom = 1
                     if self.opt.normalize_gradient:
                         grad_denom = num_accumulated_words

@@ -38,8 +38,8 @@ def build_model(opt, dicts):
     
     opt = update_backward_compatibility(opt)
 
-    cuda = (len(opt.gpus) >= 1)
-
+    #cuda = (len(opt.gpus) >= 1)
+    cuda = onmt.Constants.cudaActivated
     
     
     onmt.Constants.layer_norm = opt.layer_norm
@@ -65,26 +65,48 @@ def build_model(opt, dicts):
         model = RecurrentModel(encoder, decoder, generator)    
 
         loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
-        
+
     elif opt.model == 'transformer':
         # raise NotImplementedError
-        
+
+        from onmt.modules.TransformerCoverageMechanism.Models import Transformer, TransformerDecoder, TransformerEncoder, GeneratorCoverageMechanism
+
         onmt.Constants.init_value = opt.param_init
-        
+
         if opt.time == 'positional_encoding':
             positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
         else:
             positional_encoder = None
-        
+
         encoder = TransformerEncoder(opt, dicts['src'], positional_encoder)
         decoder = TransformerDecoder(opt, dicts['tgt'], positional_encoder)
-        
-        generator = onmt.modules.BaseModel.Generator(opt.model_size, dicts['tgt'].size())
-        
+
+        generator = GeneratorCoverageMechanism(opt.model_size, dicts['tgt'].size())
+
         model = Transformer(encoder, decoder, generator)
 
         loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
-        
+
+
+    # elif opt.model == 'transformer':
+    #     # raise NotImplementedError
+    #
+    #     onmt.Constants.init_value = opt.param_init
+    #
+    #     if opt.time == 'positional_encoding':
+    #         positional_encoder = PositionalEncoding(opt.model_size, cuda=cuda, len_max=MAX_LEN)
+    #     else:
+    #         positional_encoder = None
+    #
+    #     encoder = TransformerEncoder(opt, dicts['src'], positional_encoder)
+    #     decoder = TransformerDecoder(opt, dicts['tgt'], positional_encoder)
+    #
+    #     generator = onmt.modules.BaseModel.Generator(opt.model_size, dicts['tgt'].size())
+    #
+    #     model = Transformer(encoder, decoder, generator)
+    #
+    #     loss_function = NMTLossFunc(dicts['tgt'].size(), label_smoothing=opt.label_smoothing)
+    #
         #~ print(encoder)
         
     elif opt.model == 'stochastic_transformer':

@@ -26,11 +26,13 @@ class Generator(nn.Module):
         
         
     def forward(self, input, log_softmax=True):
-        
+        #D.S: Input has dim: (batch_size_sentences x embedding_size)
         # added float to the end 
         # print(input.size())
         logits = self.linear(input).float() 
-        
+
+        #D.S: output has dim: (batch_size_sentences x Target_vocab)
+
         if log_softmax:
             output = F.log_softmax(logits, dim=-1)
         else:
