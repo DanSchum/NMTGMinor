@@ -550,6 +550,8 @@ class GeneratorCoverageMechanism(nn.Module):
         # print(input.size())
         if input.is_cuda:
             print('Input in Generator is cuda!')
+            self.avgProb = self.avgProb.cuda()
+            wordFrequencyModel = wordFrequencyModel.cuda()
         else:
             print('Input in Generator is not cuda!')
 
