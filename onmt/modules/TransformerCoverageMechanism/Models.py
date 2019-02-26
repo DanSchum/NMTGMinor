@@ -548,13 +548,6 @@ class GeneratorCoverageMechanism(nn.Module):
         # D.S: Input has dim: (batch_size_sentences x embedding_size)
         # added float to the end
         # print(input.size())
-        if input.is_cuda:
-            print('Input in Generator is cuda!')
-
-            #self.avgProb = self.avgProb.cuda()
-            #wordFrequencyModel = wordFrequencyModel.cuda()
-        else:
-            print('Input in Generator is not cuda!')
 
 
         logits = self.linear(input).float()

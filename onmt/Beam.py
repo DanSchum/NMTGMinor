@@ -77,11 +77,10 @@ class Beam(object):
         # word and beam each score came from
         prevK = bestScoresId / numWords
         self.prevKs.append(prevK)
-        if self.nextYs.is_cuda:
-            print('self.nextYs is cuda')
         self.nextYs.append(bestScoresId - prevK * numWords)
         self.attn.append(attnOut.index_select(0, prevK))
 
+        print(self.nextYs[-1])
         # End condition is when top-of-beam is EOS.
         if self.nextYs[-1][0] == onmt.Constants.EOS:
             self.done = True
