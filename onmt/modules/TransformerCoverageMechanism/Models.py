@@ -552,8 +552,8 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
-        if logits.is_cuda:
-            logits = logits.cpu()
+        #if logits.is_cuda:
+        #    logits = logits.cpu()
 
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
@@ -562,7 +562,7 @@ class GeneratorCoverageMechanism(nn.Module):
                       + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
         self.avgProb = (self.avgProb + logits)
         if log_softmax:
-            output = F.log_softmax(logitsMixed, dim=-1)
+            output = F.log_softmax(logits, dim=-1)
         else:
             output = logitsMixed
 
