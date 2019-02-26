@@ -558,8 +558,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
 
-        logitsMixed = logits * onmt.Constants.weightStdSoftmax + 0.001
-
+        logitsMixed = logits * onmt.Constants.weightStdSoftmax + wordFrequencyModel * onmt.Constants.weightWordFrequency
         #logitsMixed = logits * onmt.Constants.weightStdSoftmax \
         #              + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
         #self.avgProb = (self.avgProb + logits)
