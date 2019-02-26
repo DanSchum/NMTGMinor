@@ -233,7 +233,7 @@ class EnsembleTranslator(object):
                 print(scores)
                 goldScores += scores.squeeze(1).type_as(goldScores)
                 goldWords += tgt_t.ne(onmt.Constants.PAD).sum().item()
-            
+            model_.generator.resetAfterExample()
             
         #  (3) Start decoding
             

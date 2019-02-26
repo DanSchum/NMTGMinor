@@ -68,6 +68,12 @@ parser.add_argument('-fp16', action='store_true',
 parser.add_argument('-gpu', type=int, default=-1,
                     help="Device to run on")
 
+#D.S:
+parser.add_argument('-weightAvgProbSoftmax', type=float, default=0.05,
+                    help="Weight of average probability of already selected words")
+parser.add_argument('-weightWordFrequencyModelSoftmax', type=float, default=0.05,
+                    help="Weight of word frequency of source words")
+
 
 def reportScore(name, scoreTotal, wordsTotal):
     print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
@@ -101,6 +107,8 @@ def main():
     opt = parser.parse_args()
     opt.cuda = opt.gpu > -1
     onmt.Constants.cudaActivated = opt.gpu > -1
+    onmt.Constants.weightWordFrequency = opt.weightWordFrequencyModelSoftmax
+    onmt.Constants.weightAvgProb = opt.weightAvgProbSoftmax
 
 
     onmt.Constants.cuda = opt.gpu > -1

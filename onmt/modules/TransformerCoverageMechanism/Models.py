@@ -551,5 +551,4 @@ class GeneratorCoverageMechanism(nn.Module):
 
     def resetAfterExample(self):
         self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
-        self.wordFrequency = torch.zeros(self.output_size, dtype=torch.float)
 
