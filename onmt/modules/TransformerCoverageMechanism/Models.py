@@ -533,6 +533,7 @@ class GeneratorCoverageMechanism(nn.Module):
         #D.S: New Tensor keeping the average probability of all previous words in this example
         self.avgProb = torch.zeros(output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
         if onmt.Constants.cudaActivated:
+            print('Avg model is cuda')
             self.avgProb = self.avgProb.cuda()
         #Avg Word Probability containing the previous words, is used to reduce probability of future words, if they already used in output
 

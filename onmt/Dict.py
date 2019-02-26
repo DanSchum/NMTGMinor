@@ -164,6 +164,7 @@ class Dict(object):
         vec = []
         wordFrequencyModel = torch.zeros(len(srcBatch), lenTargetVocabulary)
         if cudaActivated:
+            print('Word Fre is cuda')
             wordFrequencyModel = wordFrequencyModel.cuda()
 
         unk = self.lookup(unkWord)
