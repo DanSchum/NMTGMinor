@@ -153,3 +153,24 @@ class Dict(object):
                 break
 
         return labels
+
+    def createWordFrequencyModel(self, srcBatch, lenTargetVocabulary, unkWord):
+        '''
+        Create wordFrequencyModel on word frequencies from sequence. wordFrequencyModel is based on target vocabulary.
+        :param sequence:
+        :param unkWord:
+        :return:
+        '''
+        vec = []
+        wordFrequencyModel = torch.zeros(len(srcBatch), lenTargetVocabulary)
+        unk = self.lookup(unkWord)
+
+        for index, sequence in enumerate(srcBatch):
+            vec += [self.lookup(label, default=unk) for label in sequence]
+
+            for word in vec:
+                wordFrequencyModel[index, word] = wordFrequencyModel[index, word] + 1
+            wordFrequencyModel[index] = wordFrequencyModel[index] / len(vec)
+
+        return wordFrequencyModel
+

@@ -613,7 +613,7 @@ class Translator(object):
 
         #  (2) translate
         # ~ pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt)
-        finalized, goldScore, goldWords = self.translateBatch(src, tgt)
+        finalized, goldScore, goldWords = self.translateBatch(src, tgt) #D.S. Target is often empty in real translation
         
         
 

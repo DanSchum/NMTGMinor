@@ -6,6 +6,8 @@ import math
 from torch.autograd import Variable
 from onmt.ModelConstructor import build_model
 import torch.nn.functional as F
+from onmt.Constants import cudaActivated
+
 
 
 model_list = ['transformer', 'stochastic_transformer']
@@ -177,54 +179,57 @@ class EnsembleTranslator(object):
         
         return tokens
 
-    def translateBatch(self, srcBatch, tgtBatch):
+    def translateBatch(self, srcBatch, tgtBatch, wordFrequencyModel):
         
-        torch.set_grad_enabled(False)
+        torch.set_grad_enabled(False) #D.S: Set grad to false, not calculating gradients for all tensors
         # Batch size is in different location depending on data.
 
-        beamSize = self.opt.beam_size
-        batchSize = self._getBatchSize(srcBatch)
-                    
-        vocab_size = self.tgt_dict.size()
-        allHyp, allScores, allAttn, allLengths = [], [], [], []
-        
+        beamSize = self.opt.beam_size  # D.S: Size of beam search (width), takes the b best hypothesis from P(E|F) distribution
+        batchSize = self._getBatchSize(srcBatch)  #D.S: How much batches (Batches = Source squences /lines)
+
+        vocab_size = self.tgt_dict.size()  # D.S: vocabulary size of target dictionary
+        allHyp, allScores, allAttn, allLengths = [], [], [], []  # D.S: Init of Arrays
         # srcBatch should have size len x batch
         # tgtBatch should have size len x batch
         
         contexts = dict()
-        
-        src = srcBatch.transpose(0, 1)
-        
+
+        src = srcBatch.transpose(0, 1)  # D.S: Dim: batch (Size of embedding) x len (Amount of sequences)
+
         #  (1) run the encoders on the src
-        for i in range(self.n_models):
-            contexts[i], src_mask = self.models[i].encoder(src)
-            
-                
-        goldScores = contexts[0].data.new(batchSize).zero_()
+        for i in range(self.n_models):  # D.S: Loop all models (Mostly 1)
+            contexts[i], src_mask = self.models[i].encoder(src)  # Use trained encoder to encode source sequences
+            # D.S: Dim contexts: (batch_size_word x batch_size_sentence x embedding_size)
+
+        goldScores = contexts[0].data.new(
+            batchSize).zero_()  # D.S: Init Tensor with amount of sequences (Batch_size_Sentences)goldWords = 0
         goldWords = 0
-        
+
         if tgtBatch is not None:
             # Use the first model to decode
             model_ = self.models[0]
-        
-            tgtBatchInput = tgtBatch[:-1]
-            tgtBatchOutput = tgtBatch[1:]
-            tgtBatchInput = tgtBatchInput.transpose(0,1)
-            
-            output, coverage = model_.decoder(tgtBatchInput, contexts[0], src)
+
+            tgtBatchInput = tgtBatch[:-1]  # D.S: Get all target sequences, except the last one (why????)
+            tgtBatchOutput = tgtBatch[1:]  #D.S: ??tgtBatchInput = tgtBatchInput.transpose(0,1)
+            output, coverage = model_.decoder(tgtBatchInput, contexts[0],
+                                              src)  # D.S: Decoder params: input, context, src
             # output should have size time x batch x dim
             
             
             #  (2) if a target is specified, compute the 'goldScore'
             #  (i.e. log likelihood) of the target under the model
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
-                gen_t = model_.generator(dec_t)
-                tgt_t = tgt_t.unsqueeze(1)
-                scores = gen_t.data.gather(1, tgt_t)
+                gen_t = model_.generator(dec_t, wordFrequencyModel)  # D.S: Generator performs linear and softmax
+                # gen_t dimensions from softmax: (batch_size_sentences x Target_vocab)
+                tgt_t = tgt_t.unsqueeze(
+                    1)  # D.S: Returns tensor with size one at the input dimension (Here columns are 1, thats why tgt_t is transfered to lines)
+                scores = gen_t.data.gather(1,
+                                           tgt_t)  # D.S: Get fields from gen_t (output softmax) from indices on tgt_t
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
                 goldScores += scores.squeeze(1).type_as(goldScores)
                 goldWords += tgt_t.ne(onmt.Constants.PAD).sum().item()
-            
+            model_.generator.resetAfterExample()
+
             
         #  (3) Start decoding
             
@@ -270,16 +275,19 @@ class EnsembleTranslator(object):
                 attns[i] = coverage[:, -1, :].squeeze(1) # batch * beam x src_len
                 
                 # batch * beam x vocab_size 
-                outs[i] = self.models[i].generator(decoder_hidden)
-            
-            out = self._combineOutputs(outs)
+                outs[i] = self.models[i].generator(decoder_hidden, wordFrequencyModel) #D.S: Contains all outputs from generator, depending on
+
+            out = self._combineOutputs(
+                outs)  # D.S: Combine outputs of all model (most of the time, its the same because only one model is used)
+            # Dims out: (amount_models x batch_size_sentences x target_vocabulary)
             attn = self._combineAttention(attns)
-                
+
+            # D.S: Tansforms out to (beam_size x remainingSentences x target_vocabulary) and transposes it to (remainingSentences x beam_size x target_vocabulary)
             wordLk = out.view(beamSize, remainingSents, -1) \
                         .transpose(0, 1).contiguous()
             attn = attn.view(beamSize, remainingSents, -1) \
                        .transpose(0, 1).contiguous()
-                       
+
             active = []
             
             for b in range(batchSize):
@@ -287,7 +295,8 @@ class EnsembleTranslator(object):
                     continue
                 
                 idx = batchIdx[b]
-                
+
+                #D.S: Conduct beam search now.
                 if not beam[b].advance(wordLk.data[idx], attn.data[idx]):
                     active += [b]
                     
@@ -345,16 +354,19 @@ class EnsembleTranslator(object):
 
     def translate(self, srcBatch, goldBatch):
         #  (1) convert words to indexes
-        dataset = self.buildData(srcBatch, goldBatch)
+        dataset = self.buildData(srcBatch, goldBatch)  # Build new dataset
+        wordFrequencyModel = self.tgt_dict.createWordFrequencyModel(srcBatch, self.tgt_dict.size(),
+                                                                    onmt.Constants.UNK_WORD)  # D.S: srcBatch, lenTargetVocabulary, unkWord - Create WordFrequencyModel based on target vocabulary and current srcBat
         batch = dataset.next()[0]
-        batch.cuda()
+        if onmt.Constants.cudaActivated == True:
+            batch.cuda()
         # ~ batch = self.to_variable(dataset.next()[0])
         src = batch.get('source')
         tgt = batch.get('target_input')
         batchSize = batch.size
 
         #  (2) translate
-        pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt)
+        pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt, wordFrequencyModel)
         
 
         #  (3) convert indexes to words

@@ -218,9 +218,9 @@ class XETrainer(BaseTrainer):
                 batch = samples[0]
                 batch.cuda()
             
-                outputs = self.model(batch)
+                outputs = self.model(batch) #Calculate outputs of model (for batch)
                     
-                targets = batch.get('target_output')
+                targets = batch.get('target_output') #Get ground truth
                 
                 batch_size = batch.size
                 
