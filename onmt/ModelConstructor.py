@@ -35,8 +35,8 @@ def build_model(opt, dicts):
     model = None
     
     opt = update_backward_compatibility(opt)
-    
-    
+
+    cuda = onmt.Constants.cudaActivated
     onmt.Constants.layer_norm = opt.layer_norm
     onmt.Constants.weight_norm = opt.weight_norm
     onmt.Constants.activation_layer = opt.activation_layer
@@ -57,26 +57,46 @@ def build_model(opt, dicts):
         
         generator = onmt.modules.BaseModel.Generator(opt.rnn_size, dicts['tgt'].size())
         
-        model = RecurrentModel(encoder, decoder, generator)    
-        
+        model = RecurrentModel(encoder, decoder, generator)
+
     elif opt.model == 'transformer':
         # raise NotImplementedError
-        
+
+        from onmt.modules.TransformerCoverageMechanism.Models import Transformer, TransformerDecoder, \
+            TransformerEncoder, GeneratorCoverageMechanism
+
         onmt.Constants.init_value = opt.param_init
-        
+
         if opt.time == 'positional_encoding':
             positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
         else:
             positional_encoder = None
-        
+
         encoder = TransformerEncoder(opt, dicts['src'], positional_encoder)
         decoder = TransformerDecoder(opt, dicts['tgt'], positional_encoder)
-        
-        generator = onmt.modules.BaseModel.Generator(opt.model_size, dicts['tgt'].size())
-        
-        model = Transformer(encoder, decoder, generator)    
-        
-        #~ print(encoder)
+
+        generator = GeneratorCoverageMechanism(opt.model_size, dicts['tgt'].size())
+
+        model = Transformer(encoder, decoder, generator)
+
+    # elif opt.model == 'transformer':
+    #     # raise NotImplementedError
+    #
+    #     onmt.Constants.init_value = opt.param_init
+    #
+    #     if opt.time == 'positional_encoding':
+    #         positional_encoder = PositionalEncoding(opt.model_size, len_max=MAX_LEN)
+    #     else:
+    #         positional_encoder = None
+    #
+    #     encoder = TransformerEncoder(opt, dicts['src'], positional_encoder)
+    #     decoder = TransformerDecoder(opt, dicts['tgt'], positional_encoder)
+    #
+    #     generator = onmt.modules.BaseModel.Generator(opt.model_size, dicts['tgt'].size())
+    #
+    #     model = Transformer(encoder, decoder, generator)
+    #
+    #     #~ print(encoder)
         
     elif opt.model == 'stochastic_transformer':
         

@@ -6,6 +6,7 @@ import math
 from torch.autograd import Variable
 from onmt.ModelConstructor import build_model
 import torch.nn.functional as F
+from onmt.Constants import cudaActivated
 
 
 model_list = ['transformer', 'stochastic_transformer']
@@ -177,7 +178,7 @@ class EnsembleTranslator(object):
         
         return tokens
 
-    def translateBatch(self, srcBatch, tgtBatch):
+    def translateBatch(self, srcBatch, tgtBatch, wordFrequencyModel):
         
         torch.set_grad_enabled(False)
         # Batch size is in different location depending on data.
@@ -218,13 +219,15 @@ class EnsembleTranslator(object):
             #  (2) if a target is specified, compute the 'goldScore'
             #  (i.e. log likelihood) of the target under the model
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
-                gen_t = model_.generator(dec_t)
+                gen_t = model_.generator(dec_t, wordFrequencyModel)
                 tgt_t = tgt_t.unsqueeze(1)
                 scores = gen_t.data.gather(1, tgt_t)
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
                 goldScores += scores.squeeze(1).type_as(goldScores)
                 goldWords += tgt_t.ne(onmt.Constants.PAD).sum().item()
-            
+            model_.generator.resetAfterExample()
+
+
             
         #  (3) Start decoding
             
@@ -270,7 +273,9 @@ class EnsembleTranslator(object):
                 attns[i] = coverage[:, -1, :].squeeze(1) # batch * beam x src_len
                 
                 # batch * beam x vocab_size 
-                outs[i] = self.models[i].generator(decoder_hidden)
+                outs[i] = self.models[i].generator(decoder_hidden, wordFrequencyModel)
+            model_.generator.resetAfterExample()
+
             
             out = self._combineOutputs(outs)
             attn = self._combineAttention(attns)
@@ -347,14 +352,17 @@ class EnsembleTranslator(object):
         #  (1) convert words to indexes
         dataset = self.buildData(srcBatch, goldBatch)
         batch = dataset.next()[0]
-        batch.cuda()
+        wordFrequencyModel = self.tgt_dict.createWordFrequencyModel(srcBatch, self.tgt_dict.size(),
+                                                                    onmt.Constants.UNK_WORD)  # D.S: srcBatch, lenTargetVocabulary, unkWord - Create WordFrequencyModel based on target vocabulary and current srcBat
+        if onmt.Constants.cudaActivated == True:
+            batch.cuda()
         # ~ batch = self.to_variable(dataset.next()[0])
         src = batch.get('source')
         tgt = batch.get('target_input')
         batchSize = batch.size
 
         #  (2) translate
-        pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt)
+        pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt, wordFrequencyModel)
         
 
         #  (3) convert indexes to words

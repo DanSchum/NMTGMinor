@@ -8,7 +8,6 @@ import onmt
 import torch.nn.functional as F
 from onmt.modules.Bottle import Bottle
 from onmt.modules.StaticDropout import StaticDropout
-from onmt.Constants import cudaActivated
 
 def group_linear(linears, input, bias=False):
             
@@ -628,9 +627,7 @@ class PositionalEncoding(nn.Module):
 
 
         #print("Type of word_emb:" + str(type(word_emb)))
-
-        if onmt.Constants.cudaActivated:
-            word_emb.cuda()
+        word_emb.cuda()
 
         len_seq = t if t else word_emb.size(1)
         
@@ -638,17 +635,10 @@ class PositionalEncoding(nn.Module):
             self.renew(len_seq)
         
         if word_emb.size(1) == len_seq:
-            if onmt.Constants.cudaActivated:
-                out = word_emb + Variable(self.pos_emb[:len_seq, :].cuda(), requires_grad=False)
-            else:
-                out = word_emb + Variable(self.pos_emb[:len_seq, :], requires_grad=False)
+            out = word_emb + Variable(self.pos_emb[:len_seq, :].cuda(), requires_grad=False)
         else:
             # out = word_emb + Variable(self.pos_emb[:len_seq, :][-1, :], requires_grad=False)
-            if onmt.Constants.cudaActivated:
-                time_emb = Variable(self.pos_emb[len_seq-1, :].cuda(), requires_grad=False) # 1 x dim
-            else:
-                time_emb = Variable(self.pos_emb[len_seq-1, :], requires_grad=False) # 1 x dim
-
+            time_emb = Variable(self.pos_emb[len_seq-1, :].cuda(), requires_grad=False) # 1 x dim
             # out should have size bs x 1 x dim
             out = word_emb + time_emb.unsqueeze(0).repeat(word_emb.size(0), 1, 1)
         return out

@@ -8,6 +8,8 @@ import math
 import numpy
 import sys
 from TelegramSendMyselfMessages import TelegramSendMyselfMessages
+from onmt.Constants import cudaActivated
+
 
 parser = argparse.ArgumentParser(description='translate.py')
 onmt.Markdown.add_md_help_argument(parser)
@@ -66,6 +68,10 @@ parser.add_argument('-fp16', action='store_true',
                     help='To use floating point 16 in decoding')
 parser.add_argument('-gpu', type=int, default=-1,
                     help="Device to run on")
+parser.add_argument('-weightAvgProbSoftmax', type=float, default=0.05,
+                    help="Weight of average probability of already selected words")
+parser.add_argument('-weightWordFrequencyModelSoftmax', type=float, default=0.05,
+                    help="Weight of word frequency of source words")
 
 
 def reportScore(name, scoreTotal, wordsTotal):
@@ -99,6 +105,9 @@ def getSentenceFromTokens(tokens, input_type):
 def main():
     opt = parser.parse_args()
     opt.cuda = opt.gpu > -1
+    onmt.Constants.cudaActivated = opt.gpu > -1
+    onmt.Constants.weightWordFrequency = opt.weightWordFrequencyModelSoftmax
+    onmt.Constants.weightAvgProb = opt.weightAvgProbSoftmax
     if opt.cuda:
         torch.cuda.set_device(opt.gpu)
     
