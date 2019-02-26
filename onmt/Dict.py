@@ -1,5 +1,5 @@
 import torch
-from onmt.Constants import cudaActivated
+import onmt.Constants
 
 class Dict(object):
     def __init__(self, data=None, lower=False):
@@ -163,7 +163,7 @@ class Dict(object):
         '''
         vec = []
         wordFrequencyModel = torch.zeros(len(srcBatch), lenTargetVocabulary)
-        if cudaActivated:
+        if onmt.Constants.cudaActivated:
             print('Word Fre is cuda')
             wordFrequencyModel = wordFrequencyModel.cuda()
 
