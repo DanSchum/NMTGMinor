@@ -566,8 +566,6 @@ class GeneratorCoverageMechanism(nn.Module):
         else:
             output = logitsMixed
 
-        if onmt.Constants.cudaActivated:
-            output = output.cuda()
 
         return output
 
