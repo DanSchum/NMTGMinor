@@ -552,14 +552,19 @@ class GeneratorCoverageMechanism(nn.Module):
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
 
+        outputMixed = logits * onmt.Constants.weightStdSoftmax \
+                      + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
+        self.avgProb = (self.avgProb + logits)
         if log_softmax:
             output = F.log_softmax(logits, dim=-1)
         else:
             output = logits
-        outputMixed = output*onmt.Constants.weightStdSoftmax \
-            + wordFrequencyModel*onmt.Constants.weightWordFrequency - self.avgProb*onmt.Constants.weightAvgProb
-        self.avgProb = (self.avgProb + output) / 2
+
         return outputMixed
 
     def resetAfterExample(self):
         self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
+        if onmt.Constants.cudaActivated:
+            print('Avg model is cuda')
+            self.avgProb = self.avgProb.cuda()
+
