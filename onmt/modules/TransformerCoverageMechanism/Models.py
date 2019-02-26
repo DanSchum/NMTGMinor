@@ -552,6 +552,9 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
+
+        if logits.is_cuda:
+            wordFrequencyModel = wordFrequencyModel.cuda()
         #if logits.is_cuda:
         #    logits = logits.cpu()
 
