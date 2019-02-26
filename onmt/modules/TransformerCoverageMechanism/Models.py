@@ -560,7 +560,7 @@ class GeneratorCoverageMechanism(nn.Module):
         logits = self.linear(input).float()
 
         if logits.is_cuda:
-            logits = logits.cput()
+            logits = logits.cpu()
 
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
