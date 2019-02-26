@@ -108,6 +108,7 @@ def main():
     onmt.Constants.cudaActivated = opt.gpu > -1
     onmt.Constants.weightWordFrequency = opt.weightWordFrequencyModelSoftmax
     onmt.Constants.weightAvgProb = opt.weightAvgProbSoftmax
+    onmt.Constants.weightStdSoftmax = 1 - (onmt.Constants.weightWordFrequency + onmt.Constants.weightAvgProb)
     if opt.cuda:
         torch.cuda.set_device(opt.gpu)
     

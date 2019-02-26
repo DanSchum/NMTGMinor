@@ -225,7 +225,6 @@ class EnsembleTranslator(object):
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
                 goldScores += scores.squeeze(1).type_as(goldScores)
                 goldWords += tgt_t.ne(onmt.Constants.PAD).sum().item()
-            model_.generator.resetAfterExample()
 
 
             
@@ -274,8 +273,6 @@ class EnsembleTranslator(object):
                 
                 # batch * beam x vocab_size 
                 outs[i] = self.models[i].generator(decoder_hidden, wordFrequencyModel)
-            model_.generator.resetAfterExample()
-
             
             out = self._combineOutputs(outs)
             attn = self._combineAttention(attns)
@@ -346,6 +343,7 @@ class EnsembleTranslator(object):
         
         torch.set_grad_enabled(True)
 
+        model_.generator.resetAfterExample()
         return allHyp, allScores, allAttn, allLengths, goldScores, goldWords
 
     def translate(self, srcBatch, goldBatch):
