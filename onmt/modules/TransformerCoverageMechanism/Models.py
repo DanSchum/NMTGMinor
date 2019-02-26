@@ -534,7 +534,7 @@ class GeneratorCoverageMechanism(nn.Module):
         self.avgProb = torch.zeros(output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
         if onmt.Constants.cudaActivated:
             print('Avg model is cuda')
-            self.avgProb = self.avgProb.cuda()
+            #self.avgProb = self.avgProb.cuda()
         #Avg Word Probability containing the previous words, is used to reduce probability of future words, if they already used in output
 
 
@@ -548,7 +548,14 @@ class GeneratorCoverageMechanism(nn.Module):
         # D.S: Input has dim: (batch_size_sentences x embedding_size)
         # added float to the end
         # print(input.size())
+        if input.is_cuda:
+            print('Input in Generator is cuda!')
+        else:
+            print('Input in Generator is not cuda!')
+
+
         logits = self.linear(input).float()
+
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
 
@@ -566,5 +573,5 @@ class GeneratorCoverageMechanism(nn.Module):
         self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
         if onmt.Constants.cudaActivated:
             print('Avg model is cuda')
-            self.avgProb = self.avgProb.cuda()
+            #self.avgProb = self.avgProb.cuda()
 
