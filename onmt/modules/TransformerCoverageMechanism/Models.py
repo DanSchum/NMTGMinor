@@ -567,12 +567,13 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
-        meanLogits = torch.mean(logits).cpu()
+        logits = logits.cpu()
+        meanLogits = torch.mean(logits)
         topScores = torch.topk(logits, 4, dim=1)
-        topScoresTensor = topScores[0].cpu()
-        topScoresTensor = torch.abs(topScoresTensor / meanLogits).cpu()
-        self.avgProb = self.avgProb.cpu()
-        self.avgProb[topScores[1].cpu()] = torch.sigmoid(self.avgProb[topScores[1].cpu()] + topScoresTensor)
+        topScoresTensor = topScores[0]
+        topScoresTensor = torch.abs(topScoresTensor / meanLogits)
+        self.avgProb = self.avgProb
+        self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
 
         # sumavgprob = abs(torch.sum(self.avgProb ))
         # maxavgprob= torch.max(self.avgProb )
@@ -586,11 +587,12 @@ class GeneratorCoverageMechanism(nn.Module):
         #logits and output contains negative values. In beam search the maximum values are taken as top scores (means the smallest negative values)
         #To reduce the probability of token, reduce value, to increase probability, increase the value
 
-        if logits.is_cuda:
-            wordFrequencyModel = wordFrequencyModel.cuda()
-            self.avgProb = self.avgProb.cuda()
-        logitsMixed = logits \
-                      + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
+        #if logits.is_cuda:
+        #    wordFrequencyModel = wordFrequencyModel.cuda()
+        #    self.avgProb = self.avgProb.cuda()
+        logitsMixed = (logits \
+                      + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb).cuda()
+
         #if logits.is_cuda:
             #self.avgProb = self.avgProb.cpu()
 
