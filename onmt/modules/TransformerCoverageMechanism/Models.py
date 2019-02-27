@@ -591,7 +591,7 @@ class GeneratorCoverageMechanism(nn.Module):
         #    wordFrequencyModel = wordFrequencyModel.cuda()
         #    self.avgProb = self.avgProb.cuda()
         logitsMixed = (logits \
-                      + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb).cuda()
+                      + wordFrequencyModel * onmt.Constants.weightWordFrequency).cuda()
 
         #if logits.is_cuda:
             #self.avgProb = self.avgProb.cpu()
