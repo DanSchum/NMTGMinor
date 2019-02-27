@@ -555,6 +555,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if logits.is_cuda:
             wordFrequencyModel = wordFrequencyModel.cuda()
+            self.avgProb = self.avgProb.cuda()
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
         #For beam search the k (std 4) largest values by torch.topk are taken as the words with highest scores.
