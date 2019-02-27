@@ -567,21 +567,22 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
-        logits = logits.cpu()
+        if logits.is_cuda:
+            logits = logits.cpu()
         meanLogits = torch.mean(logits)
-        topScores = torch.topk(logits, 4, dim=1)
+        topScores = torch.topk(logits, 4, dim=-1)
         topScoresTensor = topScores[0]
         topScoresTensor = torch.abs(topScoresTensor / meanLogits)
         self.avgProb = self.avgProb
         self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
 
-        # sumavgprob = abs(torch.sum(self.avgProb ))
-        # maxavgprob= torch.max(self.avgProb )
-        # maxIndexavgprob = torch.argmax(self.avgProb )
-        # minavgprob = torch.min(self.avgProb )
-        # minIndexavgprob = torch.argmin(self.avgProb )
-        # meanavgprob = torch.mean(self.avgProb )
-        # topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
+        sumavgprob = abs(torch.sum(self.avgProb ))
+        maxavgprob= torch.max(self.avgProb )
+        maxIndexavgprob = torch.argmax(self.avgProb )
+        minavgprob = torch.min(self.avgProb )
+        minIndexavgprob = torch.argmin(self.avgProb )
+        meanavgprob = torch.mean(self.avgProb )
+        topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
 
 
         #logits and output contains negative values. In beam search the maximum values are taken as top scores (means the smallest negative values)
@@ -591,8 +592,10 @@ class GeneratorCoverageMechanism(nn.Module):
         #    wordFrequencyModel = wordFrequencyModel.cuda()
         #    self.avgProb = self.avgProb.cuda()
         logitsMixed = (logits \
-                      + wordFrequencyModel * onmt.Constants.weightWordFrequency).cuda()
+                      + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb)
 
+        if onmt.Constants.cudaActivated:
+            logitsMixed = logitsMixed.cuda()
         #if logits.is_cuda:
             #self.avgProb = self.avgProb.cpu()
 
@@ -617,6 +620,7 @@ class GeneratorCoverageMechanism(nn.Module):
         return output
 
     def resetAfterExample(self):
+        topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
         self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
         if onmt.Constants.cudaActivated:
             print('Avg model is cuda')

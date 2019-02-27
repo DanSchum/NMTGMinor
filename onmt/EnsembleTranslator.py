@@ -225,7 +225,7 @@ class EnsembleTranslator(object):
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
                 goldScores += scores.squeeze(1).type_as(goldScores)
                 goldWords += tgt_t.ne(onmt.Constants.PAD).sum().item()
-
+            model_.generator.resetAfterExample()
 
             
         #  (3) Start decoding
@@ -310,6 +310,8 @@ class EnsembleTranslator(object):
                 decoder_states[i]._prune_complete_beam(activeIdx, remainingSents)
 
             remainingSents = len(active)
+
+        model_.generator.resetAfterExample()
             
         #  (4) package everything up
         allHyp, allScores, allAttn = [], [], []
@@ -355,9 +357,11 @@ class EnsembleTranslator(object):
         if onmt.Constants.cudaActivated == True:
             batch.cuda()
         # ~ batch = self.to_variable(dataset.next()[0])
-        src = batch.get('source')
-        tgt = batch.get('target_input')
+        src = batch.get('source') #D.S: Contains one sequence from test corpus (Dimensions: words x 1)
+        tgt = batch.get('target_input') #D.S: Contains target sequence (Dims: words x 1)
         batchSize = batch.size
+        #TODO: D.S: Remove this print
+        print('Batch Size in current translation iteration' + str(batchSize))
 
         #  (2) translate
         pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt, wordFrequencyModel)
