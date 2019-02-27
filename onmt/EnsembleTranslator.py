@@ -360,8 +360,6 @@ class EnsembleTranslator(object):
         src = batch.get('source') #D.S: Contains one sequence from test corpus (Dimensions: words x 1)
         tgt = batch.get('target_input') #D.S: Contains target sequence (Dims: words x 1)
         batchSize = batch.size
-        #TODO: D.S: Remove this print
-        print('Batch Size in current translation iteration' + str(batchSize))
 
         #  (2) translate
         pred, predScore, attn, predLength, goldScore, goldWords = self.translateBatch(src, tgt, wordFrequencyModel)

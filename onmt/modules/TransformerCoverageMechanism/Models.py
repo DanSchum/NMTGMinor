@@ -576,13 +576,13 @@ class GeneratorCoverageMechanism(nn.Module):
         self.avgProb = self.avgProb
         self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
 
-        sumavgprob = abs(torch.sum(self.avgProb ))
-        maxavgprob= torch.max(self.avgProb )
-        maxIndexavgprob = torch.argmax(self.avgProb )
-        minavgprob = torch.min(self.avgProb )
-        minIndexavgprob = torch.argmin(self.avgProb )
-        meanavgprob = torch.mean(self.avgProb )
-        topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
+        # sumavgprob = abs(torch.sum(self.avgProb ))
+        # maxavgprob= torch.max(self.avgProb )
+        # maxIndexavgprob = torch.argmax(self.avgProb )
+        # minavgprob = torch.min(self.avgProb )
+        # minIndexavgprob = torch.argmin(self.avgProb )
+        # meanavgprob = torch.mean(self.avgProb )
+        # topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
 
 
         #logits and output contains negative values. In beam search the maximum values are taken as top scores (means the smallest negative values)
