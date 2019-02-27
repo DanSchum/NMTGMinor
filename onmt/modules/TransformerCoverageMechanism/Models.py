@@ -567,8 +567,8 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
-        meanLogits = torch.mean(logits)
-        topScores = torch.topk(logits, 4, dim=1)
+        meanLogits = torch.mean(logits).cpu()
+        topScores = torch.topk(logits, 4, dim=1).cpu()
         topScoresTensor = topScores[0].cpu()
         topScoresTensor = torch.abs(topScoresTensor / meanLogits).cpu()
         self.avgProb = self.avgProb.cpu()
