@@ -553,9 +553,6 @@ class GeneratorCoverageMechanism(nn.Module):
         logits = self.linear(input).float()
 
 
-        if logits.is_cuda:
-            wordFrequencyModel = wordFrequencyModel.cuda()
-            self.avgProb = self.avgProb.cuda()
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
         #For beam search the k (std 4) largest values by torch.topk are taken as the words with highest scores.
@@ -587,8 +584,14 @@ class GeneratorCoverageMechanism(nn.Module):
 
         #logits and output contains negative values. In beam search the maximum values are taken as top scores (means the smallest negative values)
         #To reduce the probability of token, reduce value, to increase probability, increase the value
+
+        if logits.is_cuda:
+            wordFrequencyModel = wordFrequencyModel.cuda()
+            self.avgProb = self.avgProb.cuda()
         logitsMixed = logits \
                       + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
+        if logits.is_cuda:
+            self.avgProb = self.avgProb.cpu()
 
         # sumLogits = abs(torch.sum(logitsMixed))
         # maxLogits = torch.max(logitsMixed)
