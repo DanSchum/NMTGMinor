@@ -569,9 +569,9 @@ class GeneratorCoverageMechanism(nn.Module):
 
         meanLogits = torch.mean(logits)
         topScores = torch.topk(logits, 4, dim=1)
-        topScoresTensor = topScores[0]
-        topScoresTensor = torch.abs(topScoresTensor / meanLogits)
-        self.avgProb = self.avgProb.cpu()
+        topScoresTensor = topScores[0].cuda()
+        topScoresTensor = torch.abs(topScoresTensor / meanLogits).cuda()
+        #self.avgProb = self.avgProb.cpu()
         self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
 
         # sumavgprob = abs(torch.sum(self.avgProb ))
@@ -591,8 +591,8 @@ class GeneratorCoverageMechanism(nn.Module):
             self.avgProb = self.avgProb.cuda()
         logitsMixed = logits \
                       + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
-        if logits.is_cuda:
-            self.avgProb = self.avgProb.cpu()
+        #if logits.is_cuda:
+            #self.avgProb = self.avgProb.cpu()
 
         # sumLogits = abs(torch.sum(logitsMixed))
         # maxLogits = torch.max(logitsMixed)
