@@ -555,21 +555,57 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if logits.is_cuda:
             wordFrequencyModel = wordFrequencyModel.cuda()
-        #if logits.is_cuda:
-        #    logits = logits.cpu()
-
 
         # D.S: output has dim: (batch_size_sentences x Target_vocab)
+        #For beam search the k (std 4) largest values by torch.topk are taken as the words with highest scores.
 
-        logitsMixed = logits * onmt.Constants.weightStdSoftmax + wordFrequencyModel * onmt.Constants.weightWordFrequency
-        #logitsMixed = logits * onmt.Constants.weightStdSoftmax \
-        #              + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
-        #self.avgProb = (self.avgProb + logits)
+        # sumLogits = abs(torch.sum(logits))
+        # maxLogits = torch.max(logits)
+        # maxIndex = torch.argmax(logits)
+        # minLogits = torch.min(logits)
+        # minIndex = torch.argmin(logits)
+        # meanLogits = torch.mean(logits)
+        # testValue = abs(maxLogits/meanLogits)/meanLogits
+        # #self.avgProb = (self.avgProb + logits) / sumLogits
+        #
+
+        meanLogits = torch.mean(logits)
+        topScores = torch.topk(logits, 4, dim=1)
+        topScoresTensor = topScores[0]
+        topScoresTensor = torch.abs(topScoresTensor / meanLogits)
+        self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
+
+        # sumavgprob = abs(torch.sum(self.avgProb ))
+        # maxavgprob= torch.max(self.avgProb )
+        # maxIndexavgprob = torch.argmax(self.avgProb )
+        # minavgprob = torch.min(self.avgProb )
+        # minIndexavgprob = torch.argmin(self.avgProb )
+        # meanavgprob = torch.mean(self.avgProb )
+        # topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
+
+
+        #logits and output contains negative values. In beam search the maximum values are taken as top scores (means the smallest negative values)
+        #To reduce the probability of token, reduce value, to increase probability, increase the value
+        logitsMixed = logits \
+                      + wordFrequencyModel * onmt.Constants.weightWordFrequency - self.avgProb * onmt.Constants.weightAvgProb
+
+        # sumLogits = abs(torch.sum(logitsMixed))
+        # maxLogits = torch.max(logitsMixed)
+        # maxIndex = torch.argmax(logitsMixed)
+        # minLogits = torch.min(logitsMixed)
+        # minIndex = torch.argmin(logitsMixed)
+        # meanLogits = torch.mean(logitsMixed)
+
         if log_softmax:
             output = F.log_softmax(logitsMixed, dim=-1)
         else:
             output = logits
 
+        # maxLogitsAfterSoftmax = torch.max(output)
+        # maxIndexAfterSoftmax = torch.argmax(output)
+        # minLogitsAfterSoftmax = torch.min(output)
+        # minIndexAfterSoftmax = torch.argmin(output)
+        # meanAfterSoftmax = torch.mean(output)
 
         return output
 

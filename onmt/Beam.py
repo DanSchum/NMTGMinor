@@ -69,6 +69,7 @@ class Beam(object):
 
         flatBeamLk = beamLk.view(-1)
 
+        #Here the best scores are taken. It takes k maximum xvalues for next beam search iteration.
         bestScores, bestScoresId = flatBeamLk.topk(self.size, 0, True, True)
         self.allScores.append(self.scores)
         self.scores = bestScores
@@ -80,11 +81,8 @@ class Beam(object):
         self.nextYs.append(bestScoresId - prevK * numWords)
         self.attn.append(attnOut.index_select(0, prevK))
 
-        lengthNextYs = len(self.nextYs)
-        print('lengthNextYs: ' + str(lengthNextYs))
-        print(self.nextYs[lengthNextYs - 1])
         # End condition is when top-of-beam is EOS.
-        if self.nextYs[lengthNextYs - 1][0] == onmt.Constants.EOS:
+        if self.nextYs[-1][0] == onmt.Constants.EOS:
             self.done = True
             self.allScores.append(self.scores)
 
