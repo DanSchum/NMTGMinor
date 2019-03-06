@@ -54,8 +54,9 @@ class Batch(object):
             return None
             
     def cuda(self):
-        for key, value in self.tensors.items():
-            self.tensors[key] = value.cuda()
+        if onmt.Constants.cudaActivated:
+            for key, value in self.tensors.items():
+                    self.tensors[key] = value.cuda()
 
 class Dataset(object):
     '''
@@ -219,7 +220,8 @@ class Dataset(object):
             batch_index = self.cur_index
         else:
             batch_index = self.batchOrder[self.cur_index]
-            
+
+        #D.S: Batch contains tensors.source
         batch = self[batch_index]
         
         # move the iterator one step
@@ -254,3 +256,11 @@ class Dataset(object):
         
         assert iteration >= 0 and iteration < self.numBatches
         self.cur_index = iteration
+
+    def getCurrentIndexFromBatchOrder(self):
+        '''
+        Returns current index from batch order. This is increased by next function.
+
+        :return:
+        '''
+        return self.batchOrder[self.cur_index]

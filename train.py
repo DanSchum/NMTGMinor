@@ -114,6 +114,11 @@ def main():
     
     else:
         raise NotImplementedError
+
+    #D.S: Added word frequency model:
+    #targetDataset = dataset['dicts']['tgt']
+    #targetDataset.createWordFrequencyModelFromIndices(srcBatchIndices, lenTargetVocabulary, unkWord)
+
     
     print('Building model...')
     model = build_model(opt, dicts)

@@ -177,3 +177,20 @@ class Dict(object):
             wordFrequencyModel[index] = wordFrequencyModel[index] / len(vec)
 
         return wordFrequencyModel
+
+    def createWordFrequencyModelFromIndices(self, srcBatchIndices, lenTargetVocabulary, unkWord, srcDict):
+        vec = []
+        wordFrequencyModel = torch.zeros(srcBatchIndices.size()[-1], lenTargetVocabulary)
+
+        unk = self.lookup(unkWord)
+
+        for index in range(srcBatchIndices.size()[-1]):
+            vecEncoded = srcDict.convertToLabels(srcBatchIndices[:,index], -1)
+            vec += [self.getLabel(label, default=unk) for label in vecEncoded]
+
+            for word in vec:
+                wordFrequencyModel[index, word] = wordFrequencyModel[index, word] + 1
+            wordFrequencyModel[index] = wordFrequencyModel[index] / len(vec)
+
+
+        return wordFrequencyModel

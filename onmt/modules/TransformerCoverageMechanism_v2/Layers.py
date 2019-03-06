@@ -208,7 +208,6 @@ class MultiHeadAttention(nn.Module):
     
         
     def forward(self, query, key, value, mask, query_mask=None, value_mask=None):
-<<<<<<< HEAD
         '''
         Computes forward step of Multi-Head Attention Layer
         Mask is used in decoder so that the self-attention layer is not allowed to attend earlier positions.
@@ -223,10 +222,6 @@ class MultiHeadAttention(nn.Module):
         :return:
         '''
         len_query, b = query.size(0), query.size(1) #D.S: len_query is amount of tokens per iteration, b = size of batch
-=======
-
-        len_query, b = query.size(0), query.size(1)
->>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
         len_key,  b_ = key.size(0), key.size(1)
         
         key_mask = value_mask
@@ -423,23 +418,12 @@ class EncoderLayer(nn.Module):
         super(EncoderLayer, self).__init__()
         self.version = version
         
-<<<<<<< HEAD
-        self.preprocess_attn = PrePostProcessing(d_model, p, sequence='n')
-        self.postprocess_attn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
-        self.preprocess_ffn = PrePostProcessing(d_model, p, sequence='n')
-        self.postprocess_ffn = PrePostProcessing(d_model, p, sequence='da', static=onmt.Constants.static)
-        self.multihead = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=2)
-        #D.S: Share=2, Weightsharing just between key and value
-
-        #D.S: TODO: Activation Layers of FF
-=======
         self.preprocess_attn = PrePostProcessing(d_model, 0.0, sequence='n')
         self.postprocess_attn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
         self.preprocess_ffn = PrePostProcessing(d_model, 0.0, sequence='n')
         self.postprocess_ffn = PrePostProcessing(d_model, residual_p, sequence='da', static=onmt.Constants.static)
         self.multihead = MultiHeadAttention(h, d_model, attn_p=attn_p, static=onmt.Constants.static, share=1)
         
->>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
         if onmt.Constants.activation_layer == 'linear_relu_linear':
             ff_p = p
             feedforward = FeedForward(d_model, d_ff, ff_p,static=onmt.Constants.static)
@@ -640,17 +624,21 @@ class PositionalEncoding(nn.Module):
 
         
     def forward(self, word_emb, t=None):
-    
+
+
+        #print("Type of word_emb:" + str(type(word_emb)))
+        word_emb.cuda()
+
         len_seq = t if t else word_emb.size(1)
         
         if len_seq > self.len_max:
             self.renew(len_seq)
         
         if word_emb.size(1) == len_seq:
-            out = word_emb + Variable(self.pos_emb[:len_seq, :], requires_grad=False)
+            out = word_emb + Variable(self.pos_emb[:len_seq, :].cuda(), requires_grad=False)
         else:
             # out = word_emb + Variable(self.pos_emb[:len_seq, :][-1, :], requires_grad=False)
-            time_emb = Variable(self.pos_emb[len_seq-1, :], requires_grad=False) # 1 x dim
+            time_emb = Variable(self.pos_emb[len_seq-1, :].cuda(), requires_grad=False) # 1 x dim
             # out should have size bs x 1 x dim
             out = word_emb + time_emb.unsqueeze(0).repeat(word_emb.size(0), 1, 1)
         return out

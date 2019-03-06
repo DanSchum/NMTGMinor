@@ -99,6 +99,7 @@ class XETrainer(BaseTrainer):
     def __init__(self, model, loss_function, trainData, validData, dicts, opt, set_param=True):
         super().__init__(model, loss_function, trainData, validData, dicts, opt)
         self.optim = onmt.Optim(opt)
+        self.dicts = dicts
         
         if self.cuda:
             print('Is cuda on current device available?: ' + str(torch.cuda.is_available()))
@@ -163,8 +164,15 @@ class XETrainer(BaseTrainer):
                 outputs = self.model(batch)
                 # ~ targets = batch[1][1:]
                 targets = batch.get('target_output')
-                
-                loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False)
+
+                dictTgt = self.dicts['tgt']
+                dictSrc = self.dicts['src']
+                wordFrequencyModel = dictTgt.createWordFrequencyModelFromIndices(batch.get('source'),
+                                                                                 dictTgt.size(),
+                                                                                 onmt.Constants.UNK_WORD, dictSrc)
+
+                #TODO: D.S: Add word frequency model to this loss call
+                loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False, wordFrequencyModel=wordFrequencyModel)
                 
                 loss_data = loss_output['nll']
 #~ 
@@ -209,13 +217,13 @@ class XETrainer(BaseTrainer):
         for i in range(iteration, nSamples):
 
             curriculum = (epoch < opt.curriculum)
-            
+
             samples = trainData.next(curriculum=curriculum)
 
             oom = False
             try:
                 # ~ batch = self.to_variable(samples[0])
-                batch = samples[0]
+                batch = samples[0] #Batch contains now the source
                 batch.cuda()
             
                 outputs = self.model(batch)
@@ -228,9 +236,17 @@ class XETrainer(BaseTrainer):
                 tgt_size = batch.tgt_size
                 
                 normalizer = 1
+
+                #TODO: D.S: Add word frequency model to this loss call
+                #D.S: Where do i get tgt dict from?
+
+                dictTgt = self.dicts['tgt']
+                dictSrc = self.dicts['src']
+                wordFrequencyModel = dictTgt.createWordFrequencyModelFromIndices(batch.get('source'),
+                                                                                 dictTgt.size(), onmt.Constants.UNK_WORD, dictSrc)
                 
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, 
-                                                             backward=True, mask=tgt_mask)
+                                                             backward=True, mask=tgt_mask, wordFrequencyModel=wordFrequencyModel)
                 
                 loss_data = loss_output['nll']
                 

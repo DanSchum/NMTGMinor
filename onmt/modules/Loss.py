@@ -154,7 +154,7 @@ class NMTLossFunc(LossFuncBase):
         return (loss, loss_data)
         
    
-    def forward(self, outputs, targets, generator=None, backward=False, mask=None, normalizer=1):
+    def forward(self, outputs, targets, generator=None, backward=False, mask=None, normalizer=1, wordFrequencyModel=None):
         """
         Compute the loss. Subclass must define this method.
         Args:
@@ -191,7 +191,7 @@ class NMTLossFunc(LossFuncBase):
             clean_input = outputs
             clean_targets = targets
         
-        dists = generator(clean_input)
+        dists = generator(clean_input, wordFrequencyModel)
         
         loss, loss_data = self._compute_loss(dists, clean_targets)
         

@@ -5,8 +5,10 @@ from onmt.modules.Transformer.Layers import EncoderLayer, DecoderLayer, Position
 from onmt.modules.BaseModel import NMTModel, Reconstructor, DecoderState
 import onmt
 from onmt.modules.WordDrop import embedded_dropout
+#~ from onmt.modules.Checkpoint import checkpoint
 from torch.utils.checkpoint import checkpoint
 from torch.autograd import Variable
+import torch.nn.functional as F
 
 
 
@@ -65,14 +67,8 @@ class TransformerEncoder(nn.Module):
         self.build_modules()
         
     def build_modules(self):
-<<<<<<< HEAD
-
-        #Adding here the amount of stacked encoders/decoders in the model
-        self.layer_modules = nn.ModuleList([EncoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout) for _ in range(self.layers)])
-=======
         
         self.layer_modules = nn.ModuleList([EncoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout, self.residual_dropout) for _ in range(self.layers)])
->>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
 
     def forward(self, input, **kwargs):
         """
@@ -98,7 +94,6 @@ class TransformerEncoder(nn.Module):
         emb = self.time_transformer(emb)
         
         emb = self.preprocess_layer(emb)
-<<<<<<< HEAD
 
 
         #D.S. tensor.eq computes elementwise equality (Compares each element. If elements are the same then return tensor has 1 at this element position, 0 otherwise.
@@ -106,10 +101,6 @@ class TransformerEncoder(nn.Module):
         #D.S: mask_src is 1 where input is 0. Mask is set size one in dimension 1
         #D.S: TODO: mask_src: Not sure how this is working??
         mask_src = input.eq(onmt.Constants.PAD).unsqueeze(1) # batch_size x len_src x 1 for broadcasting
-=======
-        
-        mask_src = input.eq(onmt.Constants.PAD).unsqueeze(1) # batch_size x 1 x len_src for broadcasting
->>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
         
         #~ pad_mask = input.ne(onmt.Constants.PAD)) # batch_size x len_src
         
@@ -120,6 +111,7 @@ class TransformerEncoder(nn.Module):
             #D.S: TODO: self.training is never set, so if always fails
             if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:        
                 context = checkpoint(custom_layer(layer), context, mask_src)
+
             else:
                 context = layer(context, mask_src)      # batch_size x len_src x d_model
             
@@ -185,35 +177,27 @@ class TransformerDecoder(nn.Module):
         self.build_modules()
         
     def build_modules(self):
-<<<<<<< HEAD
-        self.layer_modules = nn.ModuleList([DecoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout) for _ in range(self.layers)])
-
-    def renew_buffer(self, new_len):
-
-        print(new_len)
-=======
         self.layer_modules = nn.ModuleList([DecoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout, self.residual_dropout) for _ in range(self.layers)])
     
     def renew_buffer(self, new_len):
         
->>>>>>> 9545795c7e9f212eb6d1ad32fb233b2f1ec12d6c
         self.positional_encoder.renew(new_len)
         mask = torch.ByteTensor(np.triu(np.ones((new_len,new_len)), k=1).astype('uint8'))
         self.register_buffer('mask', mask)
-
+    
     def mark_pretrained(self):
-
+        
         self.pretrained_point = self.layers
-
-
+        
+    
     def add_layers(self, n_new_layer):
-
+        
         self.new_modules = list()
         self.layers += n_new_layer
-
+        
         for i in range(n_new_layer):
-            layer = EncoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout)
-
+            layer = EncoderLayer(self.n_heads, self.model_size, self.dropout, self.inner_size, self.attn_dropout) 
+            
             # the first layer will use the preprocessing which is the last postprocessing
             if i == 0:
                 layer.preprocess_attn = self.postprocess_layer
@@ -258,9 +242,8 @@ class TransformerDecoder(nn.Module):
 
         #D.S: Iterate through all layers in Transformer Decoder
         for i, layer in enumerate(self.layer_modules):
-
-            #D.S:
-            if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
+            
+            if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:           
                 
                 output, coverage = checkpoint(custom_layer(layer), output, context, mask_tgt, mask_src) 
                                                                               # batch_size x len_src x d_model
@@ -292,6 +275,7 @@ class TransformerDecoder(nn.Module):
             
         """
         context = decoder_state.context
+        #~ buffer = decoder_state.buffer
         buffers = decoder_state.attention_buffers
         mask_src = decoder_state.src_mask
         
@@ -531,3 +515,124 @@ class TransformerDecodingState(DecoderState):
                     t_, br_, d_ = buffer_[k].size()
                     buffer_[k] = buffer_[k].index_select(1, reorder_state) # 1 for time first
         
+class GeneratorCoverageMechanism(nn.Module):
+
+    def __init__(self, hidden_size, output_size):
+        super(GeneratorCoverageMechanism, self).__init__()
+        self.hidden_size = hidden_size
+        self.output_size = output_size
+        # ~ self.linear = onmt.modules.Transformer.Layers.XavierLinear(hidden_size, output_size)
+        self.linear = nn.Linear(hidden_size, output_size)
+
+        stdv = 1. / math.sqrt(self.linear.weight.size(1))
+
+        torch.nn.init.uniform_(self.linear.weight, -stdv, stdv)
+
+        self.linear.bias.data.zero_()
+
+        self.linearAvgProb = nn.Linear(output_size, output_size)
+        self.linearAcutalProb = nn.Linear(hidden_size, output_size)
+        self.linearWordFrequencyModel = nn.Linear(output_size, output_size)
+
+        self.linearAvgProb.bias.data.zero_()
+        self.linearWordFrequencyModel.bias.data.zero_()
+
+
+        #D.S: New Tensor keeping the average probability of all previous words in this example
+        self.avgProb = torch.zeros(output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
+        if onmt.Constants.cudaActivated:
+            print('Avg model is cuda')
+            #self.avgProb = self.avgProb.cuda()
+        #Avg Word Probability containing the previous words, is used to reduce probability of future words, if they already used in output
+
+
+    def forward(self, input, wordFrequencyModel, log_softmax=True):
+        '''
+        :param input:
+        :param wordFrequencyModel:
+        :param log_softmax:
+        :return:
+        '''
+        # D.S: Input has dim: (batch_size_sentences x embedding_size)
+        # added float to the end
+        # print(input.size())
+
+
+        logits = self.linear(input).float()
+
+
+
+        # D.S: output has dim: (batch_size_sentences x Target_vocab)
+        #For beam search the k (std 4) largest values by torch.topk are taken as the words with highest scores.
+
+        # sumLogits = abs(torch.sum(logits))
+        # maxLogits = torch.max(logits)
+        # maxIndex = torch.argmax(logits)
+        # minLogits = torch.min(logits)
+        # minIndex = torch.argmin(logits)
+        # meanLogits = torch.mean(logits)
+        # testValue = abs(maxLogits/meanLogits)/meanLogits
+        # #self.avgProb = (self.avgProb + logits) / sumLogits
+        #
+
+        if logits.is_cuda:
+            logits = logits.cpu()
+        meanLogits = torch.mean(logits)
+        topScores = torch.topk(logits, 4, dim=-1)
+        topScoresTensor = topScores[0]
+        topScoresTensor = torch.abs(topScoresTensor / meanLogits)
+        self.avgProb = self.avgProb
+        self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
+
+        # sumavgprob = abs(torch.sum(self.avgProb ))
+        # maxavgprob= torch.max(self.avgProb )
+        # maxIndexavgprob = torch.argmax(self.avgProb )
+        # minavgprob = torch.min(self.avgProb )
+        # minIndexavgprob = torch.argmin(self.avgProb )
+        # meanavgprob = torch.mean(self.avgProb )
+        # topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
+
+
+        #logits and output contains negative values. In beam search the maximum values are taken as top scores (means the smallest negative values)
+        #To reduce the probability of token, reduce value, to increase probability, increase the value
+
+        #if logits.is_cuda:
+        #    wordFrequencyModel = wordFrequencyModel.cuda()
+        #    self.avgProb = self.avgProb.cuda()
+        weightedAvgProb = self.linearAvgProb(self.avgProb).float()
+        weightedWordFrequencyModel = self.linearWordFrequencyModel(wordFrequencyModel).float()
+
+        logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
+
+        if onmt.Constants.cudaActivated:
+            logitsMixed = logitsMixed.cuda()
+        #if logits.is_cuda:
+            #self.avgProb = self.avgProb.cpu()
+
+        # sumLogits = abs(torch.sum(logitsMixed))
+        # maxLogits = torch.max(logitsMixed)
+        # maxIndex = torch.argmax(logitsMixed)
+        # minLogits = torch.min(logitsMixed)
+        # minIndex = torch.argmin(logitsMixed)
+        # meanLogits = torch.mean(logitsMixed)
+
+        if log_softmax:
+            output = F.log_softmax(logitsMixed, dim=-1)
+        else:
+            output = logits
+
+        # maxLogitsAfterSoftmax = torch.max(output)
+        # maxIndexAfterSoftmax = torch.argmax(output)
+        # minLogitsAfterSoftmax = torch.min(output)
+        # minIndexAfterSoftmax = torch.argmin(output)
+        # meanAfterSoftmax = torch.mean(output)
+
+        return output
+
+    def resetAfterExample(self):
+        topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
+        self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
+        if onmt.Constants.cudaActivated:
+            print('Avg model is cuda')
+            #self.avgProb = self.avgProb.cuda()
+
