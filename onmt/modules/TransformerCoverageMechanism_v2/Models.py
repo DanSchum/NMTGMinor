@@ -621,6 +621,9 @@ class GeneratorCoverageMechanism(nn.Module):
         weightedWordFrequencyModel = self.linearWordFrequencyModelInput(wordFrequencyModel.cuda()).float()
         weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
 
+        if not logits.is_cuda:
+            logits = logits.cuda()
+
         logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
 
         if onmt.Constants.cudaActivated:
