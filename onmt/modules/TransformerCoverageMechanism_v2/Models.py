@@ -592,8 +592,8 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
-        #if logits.is_cuda:
-        #    logits = logits.cpu()
+        if logits.is_cuda:
+            logits = logits.cpu()
         meanLogits = torch.mean(logits)
         topScores = torch.topk(logits, 4, dim=-1)
         topScoresTensor = topScores[0]
@@ -616,9 +616,9 @@ class GeneratorCoverageMechanism(nn.Module):
         #if logits.is_cuda:
         #    wordFrequencyModel = wordFrequencyModel.cuda()
         #    self.avgProb = self.avgProb.cuda()
-        weightedAvgProb = self.linearAvgProbInput(self.avgProb).float()
+        weightedAvgProb = self.linearAvgProbInput(self.avgProb.cuda()).float()
         weightedAvgProb = self.linearAvgProbOutput(weightedAvgProb).float()
-        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(wordFrequencyModel).float()
+        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(wordFrequencyModel.cuda()).float()
         weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
 
         logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
