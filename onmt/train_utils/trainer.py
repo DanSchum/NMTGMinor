@@ -173,7 +173,9 @@ class XETrainer(BaseTrainer):
 
                 #TODO: D.S: Add word frequency model to this loss call
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, backward=False, wordFrequencyModel=wordFrequencyModel)
-                
+
+                self.model.generator.resetAfterExample()
+
                 loss_data = loss_output['nll']
 #~ 
                 total_loss += loss_data
@@ -247,6 +249,8 @@ class XETrainer(BaseTrainer):
                 
                 loss_output = self.loss_function(outputs, targets, generator=self.model.generator, 
                                                              backward=True, mask=tgt_mask, wordFrequencyModel=wordFrequencyModel)
+
+                self.model.generator.resetAfterExample()
                 
                 loss_data = loss_output['nll']
                 
