@@ -537,6 +537,17 @@ class GeneratorCoverageMechanism(nn.Module):
         self.linearWordFrequencyModelInput = nn.Linear(output_size, intermediateSize)
         self.linearWordFrequencyModelOutput = nn.Linear(intermediateSize, output_size)
 
+        if onmt.Constants.cudaActivated:
+            self.linearAvgProbInput = self.linearAvgProbInput.cuda()
+            self.linearAvgProbOutput = self.linearAvgProbOutput.cuda()
+            self.linearWordFrequencyModelInput = self.linearWordFrequencyModelInput.cuda()
+            self.linearWordFrequencyModelOutput = self.linearWordFrequencyModelOutput.cuda()
+
+        torch.nn.init.uniform_(self.linearAvgProbInput.weight, -stdv, stdv)
+        torch.nn.init.uniform_(self.linearAvgProbOutput.weight, -stdv, stdv)
+        torch.nn.init.uniform_(self.linearWordFrequencyModelInput.weight, -stdv, stdv)
+        torch.nn.init.uniform_(self.linearWordFrequencyModelOutput.weight, -stdv, stdv)
+
         self.linearAvgProbInput.bias.data.zero_()
         self.linearAvgProbOutput.bias.data.zero_()
         self.linearWordFrequencyModelInput.bias.data.zero_()
