@@ -529,13 +529,18 @@ class GeneratorCoverageMechanism(nn.Module):
         torch.nn.init.uniform_(self.linear.weight, -stdv, stdv)
 
         self.linear.bias.data.zero_()
+        intermediateSize = 100
 
-        self.linearAvgProb = nn.Linear(output_size, output_size)
-        self.linearAcutalProb = nn.Linear(hidden_size, output_size)
-        self.linearWordFrequencyModel = nn.Linear(output_size, output_size)
+        self.linearAvgProbInput = nn.Linear(output_size, intermediateSize)
+        self.linearAvgProbOutput = nn.Linear(intermediateSize, output_size)
+        #self.linearAcutalProb = nn.Linear(hidden_size, output_size)
+        self.linearWordFrequencyModelInput = nn.Linear(output_size, intermediateSize)
+        self.linearWordFrequencyModelOutput = nn.Linear(intermediateSize, output_size)
 
-        self.linearAvgProb.bias.data.zero_()
-        self.linearWordFrequencyModel.bias.data.zero_()
+        self.linearAvgProbInput.bias.data.zero_()
+        self.linearAvgProbOutput.bias.data.zero_()
+        self.linearWordFrequencyModelInput.bias.data.zero_()
+        self.linearWordFrequencyModelOutput.bias.data.zero_()
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
@@ -599,8 +604,10 @@ class GeneratorCoverageMechanism(nn.Module):
         #if logits.is_cuda:
         #    wordFrequencyModel = wordFrequencyModel.cuda()
         #    self.avgProb = self.avgProb.cuda()
-        weightedAvgProb = self.linearAvgProb(self.avgProb).float()
-        weightedWordFrequencyModel = self.linearWordFrequencyModel(wordFrequencyModel).float()
+        weightedAvgProb = self.linearAvgProbInput(self.avgProb).float()
+        weightedAvgProb = self.linearAvgProbOutput(weightedAvgProb).float()
+        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(wordFrequencyModel).float()
+        weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
 
         logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
 
