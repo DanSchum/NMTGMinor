@@ -538,6 +538,7 @@ class GeneratorCoverageMechanism(nn.Module):
         self.linearWordFrequencyModelOutput = nn.Linear(intermediateSize, output_size)
 
         if onmt.Constants.cudaActivated:
+            print('Generator Linears are cuda')
             self.linearAvgProbInput = self.linearAvgProbInput.cuda()
             self.linearAvgProbOutput = self.linearAvgProbOutput.cuda()
             self.linearWordFrequencyModelInput = self.linearWordFrequencyModelInput.cuda()
@@ -591,8 +592,8 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
-        if logits.is_cuda:
-            logits = logits.cpu()
+        #if logits.is_cuda:
+        #    logits = logits.cpu()
         meanLogits = torch.mean(logits)
         topScores = torch.topk(logits, 4, dim=-1)
         topScoresTensor = topScores[0]
