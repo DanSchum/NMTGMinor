@@ -531,6 +531,7 @@ class GeneratorCoverageMechanism(nn.Module):
         self.linear.bias.data.zero_()
         intermediateSize = 10
 
+        '''
         self.linearAvgProbInput = nn.Linear(output_size, intermediateSize)
         #self.linearAvgProbOutput = nn.Linear(intermediateSize, output_size)
         #self.linearAcutalProb = nn.Linear(hidden_size, output_size)
@@ -561,7 +562,7 @@ class GeneratorCoverageMechanism(nn.Module):
         #self.linearWordFrequencyModelOutput.bias.data.zero_()
         self.bilinearAvgProbOutput.bias.data.zero_()
         self.bilinearWordFrequencyModelOutput.bias.data.zero_()
-
+        '''
 
 
         #Just vector weights for additinal softmax components to reduce parameters
@@ -569,6 +570,10 @@ class GeneratorCoverageMechanism(nn.Module):
         self.weightsWordFrequencyModel = WeightParameterVector(torch.zeros(output_size))
         self.weightsAvgProbTable.initWeights()
         self.weightsWordFrequencyModel.initWeights()
+
+        if onmt.Constants.cudaActivated:
+            self.weightsWordFrequencyModel = self.weightsWordFrequencyModel.cuda()
+            self.weightsAvgProbTable = self.weightsAvgProbTable.cuda()
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
