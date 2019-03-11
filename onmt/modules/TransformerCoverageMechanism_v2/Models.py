@@ -609,6 +609,9 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
+        if logits.is_cuda:
+            logits = logits.cpu()
+
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
         for index, singleWordLogits in enumerate(logits[:,]):
             singleTopScores = torch.topk(singleWordLogits, 4, dim=-1)
