@@ -563,6 +563,14 @@ class GeneratorCoverageMechanism(nn.Module):
         self.bilinearWordFrequencyModelOutput.bias.data.zero_()
 
 
+
+        #Just vector weights for additinal softmax components to reduce parameters
+        self.weightsAvgProbTable = WeightParameterVector(torch.zeros(output_size))
+        self.weightsWordFrequencyModel = WeightParameterVector(torch.zeros(output_size))
+        self.weightsAvgProbTable.initWeights()
+        self.weightsWordFrequencyModel.initWeights()
+
+
         #D.S: New Tensor keeping the average probability of all previous words in this example
         self.avgProb = torch.zeros(output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
         if onmt.Constants.cudaActivated:
@@ -648,17 +656,22 @@ class GeneratorCoverageMechanism(nn.Module):
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
             localWordFrequencyModel = localWordFrequencyModel.cuda()
-        weightedAvgProb = self.linearAvgProbInput(avgProbTable).float()
+
+
+
+        #weightedAvgProb = self.linearAvgProbInput(avgProbTable).float()
         #weightedAvgProb = self.linearAvgProbOutput(weightedAvgProb).float()
-        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(localWordFrequencyModel).float()
+        #weightedWordFrequencyModel = self.linearWordFrequencyModelInput(localWordFrequencyModel).float()
         #weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
 
         if not logits.is_cuda and onmt.Constants.cudaActivated:
             logits = logits.cuda()
 
         #logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
-        logitsMixed = self.bilinearAvgProbOutput(logits, weightedAvgProb).float()
-        logitsMixed = self.bilinearWordFrequencyModelOutput(logitsMixed, weightedWordFrequencyModel).float()
+        #logitsMixed = self.bilinearAvgProbOutput(logits, weightedAvgProb).float()
+        #logitsMixed = self.bilinearWordFrequencyModelOutput(logitsMixed, weightedWordFrequencyModel).float()
+
+        logitsMixed = logits + (self.weightsAvgProbTable * avgProbTable) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
 
         if onmt.Constants.cudaActivated:
             logitsMixed = logitsMixed.cuda()
@@ -694,4 +707,13 @@ class GeneratorCoverageMechanism(nn.Module):
             print('Avg model is cuda')
             #self.avgProb = self.avgProb.cuda()
         '''
+
+
+class WeightParameterVector(nn.Parameter):
+
+    def initWeights(self):
+        self.requires_grad = True
+        stdv = 1. / math.sqrt(self.data.size()[0])
+        torch.nn.init.uniform_(self.data, -stdv, stdv)
+
 
