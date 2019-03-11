@@ -652,9 +652,10 @@ class GeneratorCoverageMechanism(nn.Module):
         return output
 
     def resetAfterExample(self):
-        topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
+        #topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
         self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
         if onmt.Constants.cudaActivated:
+            print('Reset of avg model for new sequence is done')
             print('Avg model is cuda')
             #self.avgProb = self.avgProb.cuda()
 

@@ -178,7 +178,16 @@ class Dict(object):
 
         return wordFrequencyModel
 
-    def createWordFrequencyModelFromIndices(self, srcBatchIndices, lenTargetVocabulary, unkWord, srcDict):
+    def createWordFrequencyModelFromIndices(self, srcBatchIndices, lenTargetVocabulary, unkWord, srcDict, relativeModel=False):
+        '''
+
+        :param srcBatchIndices:
+        :param lenTargetVocabulary:
+        :param unkWord:
+        :param srcDict:
+        :param relativeModel: Decide between relative or absolute word frequency model
+        :return:
+        '''
         vec = []
         wordFrequencyModel = torch.zeros(srcBatchIndices.size()[-1], lenTargetVocabulary)
 
@@ -186,11 +195,12 @@ class Dict(object):
 
         for index in range(srcBatchIndices.size()[-1]):
             vecEncoded = srcDict.convertToLabels(srcBatchIndices[:,index], -1)
-            vec += [self.getLabel(label, default=unk) for label in vecEncoded]
+            vec += [self.lookup(label, default=unk) for label in vecEncoded]
 
             for word in vec:
                 wordFrequencyModel[index, word] = wordFrequencyModel[index, word] + 1
-            wordFrequencyModel[index] = wordFrequencyModel[index] / len(vec)
+            if relativeModel:
+                wordFrequencyModel[index] = wordFrequencyModel[index] / len(vec)
 
 
         return wordFrequencyModel
