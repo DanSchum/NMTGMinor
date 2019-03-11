@@ -598,7 +598,6 @@ class GeneratorCoverageMechanism(nn.Module):
         topScores = torch.topk(logits, 4, dim=-1)
         topScoresTensor = topScores[0]
         topScoresTensor = torch.abs(topScoresTensor / meanLogits)
-        self.avgProb = self.avgProb
         self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
 
         # sumavgprob = abs(torch.sum(self.avgProb ))
@@ -616,12 +615,16 @@ class GeneratorCoverageMechanism(nn.Module):
         #if logits.is_cuda:
         #    wordFrequencyModel = wordFrequencyModel.cuda()
         #    self.avgProb = self.avgProb.cuda()
-        weightedAvgProb = self.linearAvgProbInput(self.avgProb.cuda()).float()
+
+        if onmt.Constants.cudaActivated:
+            self.avgProb = self.avgProb.cuda()
+            wordFrequencyModel = wordFrequencyModel.cuda()
+        weightedAvgProb = self.linearAvgProbInput(self.avgProb).float()
         weightedAvgProb = self.linearAvgProbOutput(weightedAvgProb).float()
-        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(wordFrequencyModel.cuda()).float()
+        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(wordFrequencyModel).float()
         weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
 
-        if not logits.is_cuda:
+        if not logits.is_cuda and onmt.Constants.cudaActivated:
             logits = logits.cuda()
 
         logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
