@@ -61,6 +61,8 @@ class StaticDropout(nn.Module):
         if self.training:
             # First time or twice ?
             if self.noise_created == True:
+                if input.shape != self.noise.shape:
+                    self.gen_noise(input)
                 output = input * self.noise
                 self.noise = None
                 self.noise_created = False
