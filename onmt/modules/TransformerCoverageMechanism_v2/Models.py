@@ -529,30 +529,38 @@ class GeneratorCoverageMechanism(nn.Module):
         torch.nn.init.uniform_(self.linear.weight, -stdv, stdv)
 
         self.linear.bias.data.zero_()
-        intermediateSize = 100
+        intermediateSize = 10
 
         self.linearAvgProbInput = nn.Linear(output_size, intermediateSize)
-        self.linearAvgProbOutput = nn.Linear(intermediateSize, output_size)
+        #self.linearAvgProbOutput = nn.Linear(intermediateSize, output_size)
         #self.linearAcutalProb = nn.Linear(hidden_size, output_size)
         self.linearWordFrequencyModelInput = nn.Linear(output_size, intermediateSize)
-        self.linearWordFrequencyModelOutput = nn.Linear(intermediateSize, output_size)
+        #self.linearWordFrequencyModelOutput = nn.Linear(intermediateSize, output_size)
+        self.bilinearAvgProbOutput = nn.Bilinear(output_size, intermediateSize, output_size)
+        self.bilinearWordFrequencyModelOutput = nn.Bilinear(output_size, intermediateSize, output_size)
 
         if onmt.Constants.cudaActivated:
             print('Generator Linears are cuda')
             self.linearAvgProbInput = self.linearAvgProbInput.cuda()
-            self.linearAvgProbOutput = self.linearAvgProbOutput.cuda()
+            #self.linearAvgProbOutput = self.linearAvgProbOutput.cuda()
             self.linearWordFrequencyModelInput = self.linearWordFrequencyModelInput.cuda()
-            self.linearWordFrequencyModelOutput = self.linearWordFrequencyModelOutput.cuda()
+            #self.linearWordFrequencyModelOutput = self.linearWordFrequencyModelOutput.cuda()
+            self.bilinearAvgProbOutput = self.bilinearAvgProbOutput.cuda()
+            self.bilinearWordFrequencyModelOutput = self.bilinearWordFrequencyModelOutput.cuda()
 
         torch.nn.init.uniform_(self.linearAvgProbInput.weight, -stdv, stdv)
-        torch.nn.init.uniform_(self.linearAvgProbOutput.weight, -stdv, stdv)
+        #torch.nn.init.uniform_(self.linearAvgProbOutput.weight, -stdv, stdv)
         torch.nn.init.uniform_(self.linearWordFrequencyModelInput.weight, -stdv, stdv)
-        torch.nn.init.uniform_(self.linearWordFrequencyModelOutput.weight, -stdv, stdv)
+        #torch.nn.init.uniform_(self.linearWordFrequencyModelOutput.weight, -stdv, stdv)
+        torch.nn.init.uniform_(self.bilinearAvgProbOutput.weight, -stdv, stdv)
+        torch.nn.init.uniform_(self.bilinearWordFrequencyModelOutput.weight, -stdv, stdv)
 
         self.linearAvgProbInput.bias.data.zero_()
-        self.linearAvgProbOutput.bias.data.zero_()
+        #self.linearAvgProbOutput.bias.data.zero_()
         self.linearWordFrequencyModelInput.bias.data.zero_()
-        self.linearWordFrequencyModelOutput.bias.data.zero_()
+        #self.linearWordFrequencyModelOutput.bias.data.zero_()
+        self.bilinearAvgProbOutput.bias.data.zero_()
+        self.bilinearWordFrequencyModelOutput.bias.data.zero_()
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
@@ -592,6 +600,25 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
+        avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
+        for index, singleWordLogits in enumerate(logits[:,]):
+            singleTopScores = torch.topk(singleWordLogits, 4, dim=-1)
+            avgProbTable[index, singleTopScores[1]] = singleTopScores[0]
+            if index > 0:
+                #Accumulate the avg probabilites for each word and all previous words
+                avgProbTable[index,] += avgProbTable[(index - 1), ]
+
+        avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
+
+
+        #make copy of word frequency model
+        localWordFrequencyModel = wordFrequencyModel[0, ]
+        localWordFrequencyModel = localWordFrequencyModel.repeat(input.size()[0], 1)
+        localWordFrequencyModel = onmt.Constants.weightWordFrequency * localWordFrequencyModel
+
+
+
+        '''
         if logits.is_cuda:
             logits = logits.cpu()
         meanLogits = torch.mean(logits)
@@ -599,6 +626,8 @@ class GeneratorCoverageMechanism(nn.Module):
         topScoresTensor = topScores[0]
         topScoresTensor = torch.abs(topScoresTensor / meanLogits)
         self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
+        '''
+
 
         # sumavgprob = abs(torch.sum(self.avgProb ))
         # maxavgprob= torch.max(self.avgProb )
@@ -617,17 +646,19 @@ class GeneratorCoverageMechanism(nn.Module):
         #    self.avgProb = self.avgProb.cuda()
 
         if onmt.Constants.cudaActivated:
-            self.avgProb = self.avgProb.cuda()
-            wordFrequencyModel = wordFrequencyModel.cuda()
-        weightedAvgProb = self.linearAvgProbInput(self.avgProb).float()
-        weightedAvgProb = self.linearAvgProbOutput(weightedAvgProb).float()
-        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(wordFrequencyModel).float()
-        weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
+            avgProbTable = avgProbTable.cuda()
+            localWordFrequencyModel = localWordFrequencyModel.cuda()
+        weightedAvgProb = self.linearAvgProbInput(avgProbTable).float()
+        #weightedAvgProb = self.linearAvgProbOutput(weightedAvgProb).float()
+        weightedWordFrequencyModel = self.linearWordFrequencyModelInput(localWordFrequencyModel).float()
+        #weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
 
         if not logits.is_cuda and onmt.Constants.cudaActivated:
             logits = logits.cuda()
 
-        logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
+        #logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
+        logitsMixed = self.bilinearAvgProbOutput(logits, weightedAvgProb).float()
+        logitsMixed = self.bilinearWordFrequencyModelOutput(logitsMixed, weightedWordFrequencyModel).float()
 
         if onmt.Constants.cudaActivated:
             logitsMixed = logitsMixed.cuda()
@@ -655,10 +686,12 @@ class GeneratorCoverageMechanism(nn.Module):
         return output
 
     def resetAfterExample(self):
+        '''
         #topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
-        self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
+        #self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
         if onmt.Constants.cudaActivated:
             print('Reset of avg model for new sequence is done')
             print('Avg model is cuda')
             #self.avgProb = self.avgProb.cuda()
+        '''
 

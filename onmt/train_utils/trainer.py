@@ -228,7 +228,7 @@ class XETrainer(BaseTrainer):
                 batch = samples[0] #Batch contains now the source
                 batch.cuda()
             
-                outputs = self.model(batch)
+                outputs = self.model(batch) #D.S: Output Dimension = (TargetBatchSizeWords x amountBatches x EmbeddingSize)
                     
                 targets = batch.get('target_output')
                 
@@ -240,7 +240,6 @@ class XETrainer(BaseTrainer):
                 normalizer = 1
 
                 #TODO: D.S: Add word frequency model to this loss call
-                #D.S: Where do i get tgt dict from?
 
                 dictTgt = self.dicts['tgt']
                 dictSrc = self.dicts['src']
