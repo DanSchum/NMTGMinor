@@ -240,6 +240,9 @@ class XETrainer(BaseTrainer):
 
                 if onmt.Constants.memoryCompressionActivated:
                     targets = targets.cuda()
+                    outputs = outputs.cuda()
+
+                    #Use cuda again here for targets
 
                 targets = padToBlockSizeDimZero(targets, self.opt.block_size, self.cuda)
                 #targets = padToBlockSizeDimZero(targets, self.opt.block_size, False) #TODO: D.S: Change back to upper line
