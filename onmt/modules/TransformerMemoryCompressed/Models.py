@@ -659,6 +659,8 @@ class TransformerDecoder(nn.Module):
         pad_mask_src = src.data.ne(onmt.Constants.PAD)
         
         len_tgt = input.size(1)
+        if self.mask and onmt.Constants.memoryCompressionActivated:
+            self.mask = self.mask.cpu()
         mask_tgt = input.data.eq(onmt.Constants.PAD).unsqueeze(1) + self.mask[:len_tgt, :len_tgt]
         mask_tgt = torch.gt(mask_tgt, 0)
         
