@@ -170,6 +170,8 @@ class NMTLossFunc(LossFuncBase):
 
         if onmt.Constants.memoryCompressionActivated:
             outputs = outputs.cuda()
+            if tgt_mask:
+                tgt_mask = tgt_mask.cuda()
 
         original_outputs = outputs
         batch_size = outputs.size(1)
