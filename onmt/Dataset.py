@@ -56,7 +56,7 @@ class Batch(object):
             
     def cuda(self):
         for key, value in self.tensors.items():
-            if onmt.Constants.cuda:
+            if onmt.Constants.cudaActivated:
                 self.tensors[key] = value.cuda()
             else:
                 self.tensors[key] = value

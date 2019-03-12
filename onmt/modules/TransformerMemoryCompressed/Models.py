@@ -103,6 +103,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         """
         Inputs Shapes:
             input: batch_sizUse half precision traininge x len_src (wanna tranpose)
+            Input Dimension is (Batch_Size_Sentences x Batch_Size_words)
 
         Outputs Shapes:
             out: batch_size x len_src x d_model
@@ -111,12 +112,13 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         """
 
         #D.S: Here padding to fit in blocks is made
-        input = padToBlockSizeDimOne(input, self.block_size, self.cudaBool)
+        #input = padToBlockSizeDimOne(input, self.block_size, self.cudaBool)
+        input = padToBlockSizeDimOne(input, self.block_size, False)
 
 
         """ Embedding: batch_size x len_src x d_model """
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
-
+        #D.S: emb dim (batch_size_sentence x batch_size_words x embedding_size)
         """ Scale the emb by sqrt(d_model) """
 
         emb = emb * math.sqrt(self.model_size)
@@ -150,6 +152,13 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         #original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
         for step_num, split in enumerate(splits):
+
+            if onmt.Constants.cudaActivated:
+                #Check if split was on GPU before
+                if split.is_cuda:
+                    print('Split was already on GPU. Thats bad!!!')
+                split = split.cuda()
+
             step_tensor = torch.tensor(step_num)
             for i, layer in enumerate(self.layer_modules):
                 if type(layer) is EncoderLayerLocalAttention:

@@ -226,8 +226,9 @@ class XETrainer(BaseTrainer):
             try:
                 # ~ batch = self.to_variable(samples[0])
                 batch = samples[0]
-                if self.cuda:
-                    batch.cuda()
+                #if self.cuda:
+                    #batch.cuda()
+                    #TODO: D.S: Batch is transfered to GPU here.
 
                 if self.cuda and onmt.Constants.debug:
                     print('Max Memory allocated (After init): ' + str(torch.cuda.max_memory_allocated()))
@@ -238,6 +239,7 @@ class XETrainer(BaseTrainer):
                 targets = batch.get('target_output')
 
                 targets = padToBlockSizeDimZero(targets, self.opt.block_size, self.cuda)
+                #targets = padToBlockSizeDimZero(targets, self.opt.block_size, False) #TODO: D.S: Change back to upper line
 
                 batch_size = batch.size
                 
