@@ -111,6 +111,9 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         """
 
+        if input.is_cuda:
+            print('Input is cuda here. Bad')
+
         #D.S: Here padding to fit in blocks is made
         #input = padToBlockSizeDimOne(input, self.block_size, self.cudaBool)
         input = padToBlockSizeDimOne(input, self.block_size, False)
@@ -133,6 +136,9 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         # ~ pad_mask = input.ne(onmt.Constants.PAD)) # batch_size x len_src
 
         context = emb.transpose(0, 1).contiguous()
+
+        if context.is_cuda:
+            print('Context is cuda here. Bad')
 
         # D.S: Context is splitted in seperate parts
         batch_sentences = context.shape[1]
