@@ -147,13 +147,16 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         states_v = torch.zeros(
             (self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
 
-        if self.cudaBool:
+        if onmt.Constants.cudaActivated:
             states_k = states_k.cuda()
             states_v = states_v.cuda()
+            mask_src = mask_src.cuda()
 
         if self.cudaBool and onmt.Constants.debug:
             print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
+
+        first = True
 
         #original_batch_size = context.shape[0]
         splits = torch.split(context, self.block_size, dim=0)
@@ -161,8 +164,10 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
             if onmt.Constants.cudaActivated:
                 #Check if split was on GPU before
-                if split.is_cuda:
+                if split.is_cuda and first:
                     print('Split was already on GPU. Thats bad!!!')
+                else:
+                    first = False
                 split = split.cuda()
 
             step_tensor = torch.tensor(step_num)
