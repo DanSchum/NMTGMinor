@@ -481,9 +481,6 @@ class DecoderLayerLocalAttention(nn.Module):
 
         self_context = query
 
-        if onmt.Constants.memoryCompressionActivated and onmt.Constants.cudaActivated:
-            mask_tgt = mask_tgt.cuda()
-
         #D.S. Set to local attention layer
         out, coverage = self.multihead_tgt(query, self_context, self_context, mask_tgt)
 

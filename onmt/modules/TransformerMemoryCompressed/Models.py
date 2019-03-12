@@ -443,9 +443,12 @@ class TransformerDecoderMemoryCompressed(nn.Module):
         states_k = torch.zeros((self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
         states_v = torch.zeros((self.n_heads * batch_sentences, context.shape[0], (self.model_size // self.n_heads)))
 
-        if self.cuda:
+        if  onmt.Constants.cudaActivated:
             states_k = states_k.cuda()
             states_v = states_v.cuda()
+            if onmt.Constants.memoryCompressionActivated:
+                mask_tgt = mask_tgt.cuda()
+                mask_src = mask_src.cuda()
 
         #TODO: D.S. Is the split on output correct? Should here the split on context/input be done?
         splits = torch.split(context, self.block_size, dim=0)
