@@ -19,9 +19,9 @@ def embedded_dropout(embed, words, dropout=0.1, scale=None):
     if padding_idx is None:
             padding_idx = -1
 
-    if onmt.Constants.cudaActivated== 1:
+    if onmt.Constants.cudaActivated== 1 and not onmt.Constants.memoryCompressionActivated:
         masked_embed_weight = masked_embed_weight.cuda()
-    
+
     X =  F.embedding(
             words, masked_embed_weight, padding_idx, embed.max_norm,
             embed.norm_type, embed.scale_grad_by_freq, embed.sparse)

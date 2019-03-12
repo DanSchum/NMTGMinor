@@ -36,6 +36,9 @@ onmt.Constants.max_position_length = opt.max_position_length
 onmt.Constants.debug = opt.debug
 onmt.Constants.cudaActivated = (len(opt.gpus) >= 1)
 
+if opt.model in ['transformer_memory_compressed']:
+    onmt.Constants.memoryCompressionActivated = True
+
 # Use static dropout if checkpointing > 0
 if opt.checkpointing > 0:
     onmt.Constants.static = True

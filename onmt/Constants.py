@@ -16,3 +16,4 @@ max_position_length = 512
 
 debug = 0
 cudaActivated = 0
+memoryCompressionActivated = 0
