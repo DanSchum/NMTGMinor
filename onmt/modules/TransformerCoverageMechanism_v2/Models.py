@@ -529,7 +529,7 @@ class GeneratorCoverageMechanism(nn.Module):
         torch.nn.init.uniform_(self.linear.weight, -stdv, stdv)
 
         self.linear.bias.data.zero_()
-        intermediateSize = 10
+        #intermediateSize = 10
 
         '''
         self.linearAvgProbInput = nn.Linear(output_size, intermediateSize)
@@ -573,9 +573,9 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
-        self.avgProb = torch.zeros(output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
-        if onmt.Constants.cudaActivated:
-            print('Avg model is cuda')
+        #self.avgProb = torch.zeros(output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
+        #if onmt.Constants.cudaActivated:
+        #    print('Avg model is cuda')
             #self.avgProb = self.avgProb.cuda()
         #Avg Word Probability containing the previous words, is used to reduce probability of future words, if they already used in output
 
@@ -609,10 +609,12 @@ class GeneratorCoverageMechanism(nn.Module):
         # #self.avgProb = (self.avgProb + logits) / sumLogits
         #
 
-        if logits.is_cuda:
-            logits = logits.cpu()
+        #if logits.is_cuda:
+        #    logits = logits.cpu()
 
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
+        if onmt.Constants.cudaActivated:
+            avgProbTable = avgProbTable.cuda()
         for index, singleWordLogits in enumerate(logits[:,]):
             singleTopScores = torch.topk(singleWordLogits, 4, dim=-1)
             avgProbTable[index, singleTopScores[1]] = singleTopScores[0]
@@ -625,6 +627,8 @@ class GeneratorCoverageMechanism(nn.Module):
 
         #make copy of word frequency model
         localWordFrequencyModel = wordFrequencyModel[0, ]
+        if onmt.Constants.cudaActivated:
+            localWordFrequencyModel = localWordFrequencyModel.cuda()
         localWordFrequencyModel = localWordFrequencyModel.repeat(input.size()[0], 1)
         localWordFrequencyModel = onmt.Constants.weightWordFrequency * localWordFrequencyModel
 
@@ -657,9 +661,9 @@ class GeneratorCoverageMechanism(nn.Module):
         #    wordFrequencyModel = wordFrequencyModel.cuda()
         #    self.avgProb = self.avgProb.cuda()
 
-        if onmt.Constants.cudaActivated:
-            avgProbTable = avgProbTable.cuda()
-            localWordFrequencyModel = localWordFrequencyModel.cuda()
+        #if onmt.Constants.cudaActivated:
+        #    avgProbTable = avgProbTable.cuda()
+        #    localWordFrequencyModel = localWordFrequencyModel.cuda()
 
 
 
@@ -668,8 +672,8 @@ class GeneratorCoverageMechanism(nn.Module):
         #weightedWordFrequencyModel = self.linearWordFrequencyModelInput(localWordFrequencyModel).float()
         #weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
 
-        if not logits.is_cuda and onmt.Constants.cudaActivated:
-            logits = logits.cuda()
+        #if not logits.is_cuda and onmt.Constants.cudaActivated:
+        #    logits = logits.cuda()
 
         #logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
         #logitsMixed = self.bilinearAvgProbOutput(logits, weightedAvgProb).float()
