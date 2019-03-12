@@ -399,8 +399,12 @@ class TransformerDecoderMemoryCompressed(nn.Module):
 
 
         #D.S: Here padding to fit in blocks is made
-        input = padToBlockSizeDimOne(input, self.block_size, self.cuda)
-        src = padToBlockSizeDimOne(src, self.block_size, self.cuda)
+        if onmt.Constants.memoryCompressionActivated:
+            input = padToBlockSizeDimOne(input, self.block_size, False)
+            src = padToBlockSizeDimOne(src, self.block_size, False)
+        else:
+            input = padToBlockSizeDimOne(input, self.block_size, onmt.Constants.cudaActivated)
+            src = padToBlockSizeDimOne(src, self.block_size, onmt.Constants.cudaActivated)
 
         """ Embedding: batch_size x len_tgt x d_model """
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
