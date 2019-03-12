@@ -20,8 +20,11 @@ def embedded_dropout(embed, words, dropout=0.1, scale=None):
             padding_idx = -1
 
     if onmt.Constants.cudaActivated== 1 and not onmt.Constants.memoryCompressionActivated:
+        print('Transfered masked_embed_weight to cuda')
         masked_embed_weight = masked_embed_weight.cuda()
 
+    if onmt.Constants.memoryCompressionActivated:
+        masked_embed_weight = masked_embed_weight.cpu()
 
     #TODO: Remove this check afterwards
     if words.is_cuda:
