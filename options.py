@@ -191,6 +191,12 @@ def make_parser(parser):
                         help="Print stats at this interval.")
     parser.add_argument('-save_every', type=int, default=-1,
                         help="Save every this interval.")
-    
-    
+
+
+    #D.S:
+    parser.add_argument('-weightAvgProb', type=float, default=0.2,
+                        help="Weight for interpolation in softmax for avg probabilities")  # D.S:
+    parser.add_argument('-weightWordFrequency', type=float, default=0.2,
+                        help="Weight for interpolation in softmax for word frequency model")  # D.S:
+
     return parser

@@ -35,6 +35,9 @@ onmt.Constants.checkpointing = opt.checkpointing
 onmt.Constants.max_position_length = opt.max_position_length
 onmt.Constants.cudaActivated = (len(opt.gpus) >= 1)
 
+onmt.Constants.weightAvgProb = opt.weightAvgProb
+onmt.Constants.weightWordFrequency = opt.weightWordFrequency
+
 
 # Use static dropout if checkpointing > 0
 if opt.checkpointing > 0:
