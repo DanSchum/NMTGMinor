@@ -167,6 +167,10 @@ class NMTLossFunc(LossFuncBase):
         """
         
         outputs = output_dict['hiddens']
+
+        if onmt.Constants.memoryCompressionActivated:
+            outputs = outputs.cuda()
+
         original_outputs = outputs
         batch_size = outputs.size(1)
         h_size = outputs.size(-1)

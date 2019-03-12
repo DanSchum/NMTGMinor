@@ -240,7 +240,6 @@ class XETrainer(BaseTrainer):
 
                 if onmt.Constants.memoryCompressionActivated:
                     targets = targets.cuda()
-                    outputs = outputs.cuda()
 
                     #Use cuda again here for targets
 
