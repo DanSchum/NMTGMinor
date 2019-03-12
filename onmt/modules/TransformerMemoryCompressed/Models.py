@@ -661,6 +661,15 @@ class TransformerDecoder(nn.Module):
         len_tgt = input.size(1)
         if onmt.Constants.memoryCompressionActivated:
             self.mask = self.mask.cpu()
+
+        #TODO: D.S: Remove this afterwards
+        if self.mask.is_cuda:
+            print('self.mask is cuda')
+
+        # TODO: D.S: Remove this afterwards
+        if input:
+            print('input is cuda')
+
         mask_tgt = input.data.eq(onmt.Constants.PAD).unsqueeze(1) + self.mask[:len_tgt, :len_tgt]
         mask_tgt = torch.gt(mask_tgt, 0)
         
