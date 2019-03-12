@@ -429,7 +429,7 @@ class TransformerDecoderMemoryCompressed(nn.Module):
             print('self.mask is cuda')
 
         # TODO: D.S: Remove this afterwards
-        if input:
+        if input.is_cuda:
             print('input is cuda')
 
         len_tgt = input.size(1)
