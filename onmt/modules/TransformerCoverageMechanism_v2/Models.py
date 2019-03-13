@@ -631,9 +631,6 @@ class GeneratorCoverageMechanism(nn.Module):
 
         avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
 
-        test = torch.topk(avgProbTable, 10, dim=-1)
-
-
         #make copy of word frequency model
         localWordFrequencyModel = wordFrequencyModel[0, ]
         if onmt.Constants.cudaActivated:
