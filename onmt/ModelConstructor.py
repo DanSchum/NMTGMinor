@@ -225,6 +225,7 @@ def build_model(opt, dicts):
 
     elif opt.model in ['transformer_memory_compressed']:
         from onmt.modules.TransformerMemoryCompressed.Models import TransformerEncoderMemoryCompressed, TransformerDecoderMemoryCompressed, TransformerMemoryCompressed
+        from onmt.modules.TransformerMemoryCompressed.Layers import PositionalEncoding
         onmt.Constants.init_value = opt.param_init
 
         if opt.time == 'positional_encoding':
