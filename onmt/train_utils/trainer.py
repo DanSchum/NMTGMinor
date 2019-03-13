@@ -268,6 +268,7 @@ class XETrainer(BaseTrainer):
 
             except RuntimeError as e:
                 if 'out of memory' in str(e):
+                    print(str(e))
                     print('| WARNING: ran out of memory on GPU , skipping batch')
                     oom = True
                     torch.cuda.empty_cache()
