@@ -561,8 +561,23 @@ class LocalAttention(nn.Module):
 
         # project inputs to multi-heads
         proj_query = self.fc_query(query)  # batch_size x len_query x h*d_head
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 8')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
         shared_kv = group_linear([self.fc_key.function.linear, self.fc_value.function.linear], key)
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 9')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
+
         proj_key, proj_value = shared_kv.chunk(2, dim=-1)
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 10')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
         q, k, v = proj_query, proj_key, proj_value #Dimensions: (Block_Size x Batch_Sentences x Embedding_Size)
         #Batch_Sentence:

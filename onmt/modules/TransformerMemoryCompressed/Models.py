@@ -180,8 +180,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         if onmt.Constants.cudaActivated and onmt.Constants.debug:
             print('Position 1')
-            print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
-            print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
         first = True
 
@@ -203,15 +202,14 @@ class TransformerEncoderMemoryCompressed(nn.Module):
             for i, layer in enumerate(self.layer_modules):
                 if onmt.Constants.cudaActivated and onmt.Constants.debug:
                     print('Position 5')
-                    print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
-                    print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
+                    print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
                 if type(layer) is EncoderLayerLocalAttention:
                     #D.S: Handle Local Attention Layer
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         #def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
                         #Context is used as v-Values, which are mulitplied with the attention (attn = q * k)
-                        print('We are checkpointing for layer' + str(i) + ' and split ' + str(step_num))
+                        print('We are checkpointing for layer ' + str(i) + ' and split ' + str(step_num))
                         context, prev_k, prev_v = checkpoint(custom_layer(layer), context, split, mask_src,
                                                              step_tensor, states_k, states_v)
                         #Return values:
@@ -229,8 +227,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
                 if onmt.Constants.cudaActivated and onmt.Constants.debug:
                     print('Position 6')
-                    print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
-                    print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
+                    print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done
@@ -864,8 +861,8 @@ class TransformerMemoryCompressed(NMTModel):
 
         if self.cudaBool and onmt.Constants.debug:
             print('Position 4')
-            print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
-            print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
+            print('Max Memory allocated : ' + str(torch.cuda.max_memory_allocated()))
+            print('Real Memory allocated : ' + str(torch.cuda.memory_allocated()))
 
         output_dict = dict()
         output_dict['hiddens'] = output
