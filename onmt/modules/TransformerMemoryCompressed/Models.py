@@ -113,6 +113,8 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         if input.is_cuda:
             print('Input is cuda here. Bad')
+        else:
+            print('Input is not cuda here. Good')
 
         #D.S: Here padding to fit in blocks is made
         #input = padToBlockSizeDimOne(input, self.block_size, self.cudaBool)
@@ -123,6 +125,9 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         emb = embedded_dropout(self.word_lut, input, dropout=self.word_dropout if self.training else 0)
         #D.S: emb dim (batch_size_sentence x batch_size_words x embedding_size)
         """ Scale the emb by sqrt(d_model) """
+
+        if emb.is_cuda():
+            print('emb is cuda here')
 
         emb = emb * math.sqrt(self.model_size)
 
