@@ -131,19 +131,34 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         emb = emb * math.sqrt(self.model_size)
 
+        if emb.is_cuda:
+            print('emb is cuda here 2')
+        else:
+            print('emb is not cuda here 2')
+
         """ Adding positional encoding """
         emb = self.time_transformer(emb)
 
+        if emb.is_cuda:
+            print('emb is cuda here 3')
+        else:
+            print('emb is not cuda here 3')
+
         emb = self.preprocess_layer(emb)
+
+        if emb.is_cuda:
+            print('emb is cuda here 4')
+        else:
+            print('emb is not cuda here 4')
 
         mask_src = input.eq(onmt.Constants.PAD).unsqueeze(1)  # batch_size x 1 x len_src for broadcasting
 
         # ~ pad_mask = input.ne(onmt.Constants.PAD)) # batch_size x len_src
 
         if emb.is_cuda:
-            print('emb is cuda here 2')
+            print('emb is cuda here 5')
         else:
-            print('emb is not cuda here 2')
+            print('emb is not cuda here 5')
 
 
         context = emb.transpose(0, 1).contiguous()

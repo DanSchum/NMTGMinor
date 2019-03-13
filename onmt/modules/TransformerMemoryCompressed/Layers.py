@@ -275,6 +275,7 @@ class PositionalEncoding(nn.Module):
             self.renew(len_seq)
 
         if self.cuda and not onmt.Constants.memoryCompressionActivated:
+            print('Transfered word_emb to cuda')
             word_emb = word_emb.cuda()
             self.pos_emb = self.pos_emb.cuda()
 
