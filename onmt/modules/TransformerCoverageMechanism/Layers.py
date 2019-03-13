@@ -250,24 +250,47 @@ class MultiHeadAttention(nn.Module):
         k = k.contiguous().view(len_key,   b*self.h, self.d_head).transpose(0, 1)
         v = v.contiguous().view(len_key,   b*self.h, self.d_head).transpose(0, 1)
 
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 10')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
         q = q * (self.d_head**-0.5)
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 11')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
         # get dotproduct softmax attns for each head
         #D.S: Calculate Score (Step 3.1, Page 7)
         attns = torch.bmm(q, k.transpose(1,2))  # batch_size*h x len_query x len_key
         #D.S: bmm = batch matrix matrix product
 
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 11,5')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
         #Reshape of b
         attns = attns.view(b, self.h, len_query, len_key)  #D.S: TODO: Not sure what is done here
         mask_ = mask.unsqueeze(-3) #D.S: At dimension -3 put everything in in size one
         # FP16 support: cast to float and back
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 12')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
+
         #D.S: TODO: Is normalization missing here?
         attns = F.softmax(attns.float(), dim=-1).type_as(attns) #D.S: Page 7, Step 3.3
         # return mean attention from all heads as coverage
         coverage = torch.mean(attns, dim=1)
         attns = self.attn_dropout(attns)
         attns = attns.view(b*self.h, len_query, len_key)
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 13')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
         
         # apply attns on value
         out = torch.bmm(attns, v)      # batch_size*h x len_query x d_head #D.S: Page 7, Step 3.5
