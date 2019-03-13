@@ -198,18 +198,20 @@ class TransformerEncoderMemoryCompressed(nn.Module):
                 split = split.cuda()
                 context = context.cuda()
 
-            if onmt.Constants.cudaActivated and onmt.Constants.debug:
-                print('Position 5')
-                print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
-                print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 
             step_tensor = torch.tensor(step_num)
             for i, layer in enumerate(self.layer_modules):
+                if onmt.Constants.cudaActivated and onmt.Constants.debug:
+                    print('Position 5')
+                    print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
+                    print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
+
                 if type(layer) is EncoderLayerLocalAttention:
                     #D.S: Handle Local Attention Layer
                     if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
                         #def forward(self, query, key, value, mask, step_num, prev_k, prev_v, query_mask=None, value_mask=None):
                         #Context is used as v-Values, which are mulitplied with the attention (attn = q * k)
+                        print('We are checkpointing for layer' + str(i) + ' and split ' + str(step_num))
                         context, prev_k, prev_v = checkpoint(custom_layer(layer), context, split, mask_src,
                                                              step_tensor, states_k, states_v)
                         #Return values:
