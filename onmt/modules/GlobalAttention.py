@@ -625,10 +625,7 @@ class LocalAttention(nn.Module):
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
         # get dotproduct softmax attns for each head
-        if onmt.Constants.memoryCompressionActivated:
-            attns = torch.bmm(q, k.transpose(1, 2)).cpu()
-        else:
-            attns = torch.bmm(q, k.transpose(1, 2))
+        attns = torch.bmm(q, k.transpose(1, 2))
         #q = ((b*h) x (Batch_Size_Words) x (Embedding/h))
         #After Transpose: k = ((b*h) x (Embedding/h) x (Batch_Size_Words))
         #attns = ((b*h) x (Batch_Size_Words) x Batch_Size_Words)
@@ -649,6 +646,8 @@ class LocalAttention(nn.Module):
             print('Position 12')
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
+        if onmt.Constants.memoryCompressionActivated:
+            attns = attns.cpu()
         torch.cuda.empty_cache()
 
         attns = F.softmax(attns.float(), dim=-1).type_as(attns)
