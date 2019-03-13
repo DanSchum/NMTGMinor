@@ -630,6 +630,10 @@ class LocalAttention(nn.Module):
         #After Transpose: k = ((b*h) x (Embedding/h) x (Batch_Size_Words))
         #attns = ((b*h) x (Batch_Size_Words) x Batch_Size_Words)
 
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 11,5')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
         #attns = attns.view(b, self.h, len_query, len_query)  #Attns = (b x h x Batch_Size_Words x Batch_Size_Words)
         attns = attns.view(b, self.h, len_query, len_prev_key)  #Attns = (b x h x Block_Size x Batch_Size_Words)
         mask_ = mask.unsqueeze(-3)
@@ -641,6 +645,8 @@ class LocalAttention(nn.Module):
         if onmt.Constants.cudaActivated and onmt.Constants.debug:
             print('Position 12')
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
+        torch.cuda.empty_cache()
 
         attns = F.softmax(attns.float(), dim=-1).type_as(attns)
         # return mean attention from all heads as coverage
