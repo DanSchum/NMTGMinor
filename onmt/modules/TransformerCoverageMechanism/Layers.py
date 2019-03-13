@@ -251,13 +251,13 @@ class MultiHeadAttention(nn.Module):
         v = v.contiguous().view(len_key,   b*self.h, self.d_head).transpose(0, 1)
 
 
-        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+        if onmt.Constants.cudaActivated:
             print('Position 10')
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
         q = q * (self.d_head**-0.5)
 
-        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+        if onmt.Constants.cudaActivated:
             print('Position 11')
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
@@ -266,7 +266,7 @@ class MultiHeadAttention(nn.Module):
         attns = torch.bmm(q, k.transpose(1,2))  # batch_size*h x len_query x len_key
         #D.S: bmm = batch matrix matrix product
 
-        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+        if onmt.Constants.cudaActivated:
             print('Position 11,5')
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
@@ -276,7 +276,7 @@ class MultiHeadAttention(nn.Module):
         # FP16 support: cast to float and back
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
 
-        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+        if onmt.Constants.cudaActivated:
             print('Position 12')
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
@@ -288,7 +288,7 @@ class MultiHeadAttention(nn.Module):
         attns = self.attn_dropout(attns)
         attns = attns.view(b*self.h, len_query, len_key)
 
-        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+        if onmt.Constants.cudaActivated:
             print('Position 13')
             print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
         
