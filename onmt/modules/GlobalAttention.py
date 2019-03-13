@@ -608,21 +608,21 @@ class LocalAttention(nn.Module):
             k = torch.cat([k, torch.zeros(k.shape[0], (prev_k.shape[1] - k.shape[1]), k.shape[2]).cuda()], dim=1)
             #Reshape the k & v Tensor at Dim 1 to have the full size of word batch from the block size. This is needed to use where operation on this Dimension
             # because the Dimension needs to be the same (Compare from previous and current k & v Tensors)
-            v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2]).cuda()], dim=1)
-            #q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2]).cuda()], dim=1)
+             #q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2]).cuda()], dim=1)
         else:
-            current_position = current_position
+            #current_position = current_position
             k = torch.cat([k, torch.zeros(k.shape[0], (prev_k.shape[1] - k.shape[1]), k.shape[2])], dim=1)
-            v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2])], dim=1)
             #q = torch.cat([q, torch.zeros(q.shape[0], (prev_v.shape[1] - q.shape[1]), q.shape[2])], dim=1)
 
         k = torch.where(current_position, k, prev_k)
         #Use indizies from current_position to select from current k Tensor or previous k Tensor)
-        v = torch.where(current_position, v, prev_v)
         #Dimensions: (b*h) x (Batch Size Words) x (Embedding_Size / h)
 
         q = q * (self.d_head ** -0.5)
 
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 11')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
 
         # get dotproduct softmax attns for each head
         attns = torch.bmm(q, k.transpose(1, 2))
@@ -637,11 +637,26 @@ class LocalAttention(nn.Module):
         # FP16 support: cast to float and back
         attns = attns.float().masked_fill_(mask_, -float('inf')).type_as(attns)
         #masked_fill fills -inf float values in all field of attention tensor, where mask = 1
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 12')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
         attns = F.softmax(attns.float(), dim=-1).type_as(attns)
         # return mean attention from all heads as coverage
         #coverage = torch.mean(attns, dim=1)
         attns = self.attn_dropout(attns)
         attns = attns.view(b * self.h, len_query, len_prev_key)
+
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 13')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
+        if onmt.Constants.cudaActivated:
+            v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2]).cuda()], dim=1)
+        else:
+            v = torch.cat([v, torch.zeros(v.shape[0], (prev_v.shape[1] - v.shape[1]), v.shape[2])], dim=1)
+        v = torch.where(current_position, v, prev_v)
 
         # apply attns on value
         out = torch.bmm(attns, v)  # batch_size*h x len_query x d_head
