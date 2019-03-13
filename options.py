@@ -198,5 +198,7 @@ def make_parser(parser):
                         help="Weight for interpolation in softmax for avg probabilities")  # D.S:
     parser.add_argument('-weightWordFrequency', type=float, default=0.2,
                         help="Weight for interpolation in softmax for word frequency model")  # D.S:
+    parser.add_argument('-modePreviousProbsSoftmax', type=int, default=1,
+                        help="Mode for previous probs in softmax")  # D.S:
 
     return parser

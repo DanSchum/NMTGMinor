@@ -612,17 +612,26 @@ class GeneratorCoverageMechanism(nn.Module):
         #if logits.is_cuda:
         #    logits = logits.cpu()
 
+
+
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
         for index, singleWordLogits in enumerate(logits[:,]):
-            singleTopScores = torch.topk(singleWordLogits, 4, dim=-1)
-            avgProbTable[index, singleTopScores[1]] = singleTopScores[0]
+            if onmt.Constants.modePreviousProbsSoftmax == 1:
+                scores = torch.topk(singleWordLogits, 4, dim=-1)
+                avgProbTable[index, scores[1]] = scores[0]
+            else:
+                scores = singleWordLogits
+                avgProbTable[index, ] = scores
+
             if index > 0:
                 #Accumulate the avg probabilites for each word and all previous words
                 avgProbTable[index,] += avgProbTable[(index - 1), ]
 
         avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
+
+        test = torch.topk(avgProbTable, 10, dim=-1)
 
 
         #make copy of word frequency model

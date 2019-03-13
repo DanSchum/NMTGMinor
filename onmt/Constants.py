@@ -20,3 +20,4 @@ cudaActivated = 0
 weightAvgProb = 0.00
 weightWordFrequency = 0.00
 weightStdSoftmax = 1 - (weightAvgProb + weightWordFrequency)
+modePreviousProbsSoftmax = 1
