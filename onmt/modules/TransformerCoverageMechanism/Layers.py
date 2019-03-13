@@ -221,6 +221,10 @@ class MultiHeadAttention(nn.Module):
         :param value_mask:
         :return:
         '''
+        if onmt.Constants.cudaActivated:
+            print('Position 9')
+            print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
+
         len_query, b = query.size(0), query.size(1) #D.S: len_query is amount of tokens per iteration, b = size of batch
         len_key,  b_ = key.size(0), key.size(1)
         
