@@ -178,7 +178,8 @@ class TransformerEncoderMemoryCompressed(nn.Module):
             states_v = states_v.cuda()
             mask_src = mask_src.cuda()
 
-        if self.cudaBool and onmt.Constants.debug:
+        if onmt.Constants.cudaActivated and onmt.Constants.debug:
+            print('Position 1')
             print('Max Memory allocated (Before encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward): ' + str(torch.cuda.memory_allocated()))
 
@@ -196,8 +197,11 @@ class TransformerEncoderMemoryCompressed(nn.Module):
                     first = False
                 split = split.cuda()
                 context = context.cuda()
-                if splits.is_cuda():
-                    print("Complete Splits is already cuda: BAD!!!")
+
+            if onmt.Constants.cudaActivated and onmt.Constants.debug:
+                print('Position 5')
+                print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
+                print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 
             step_tensor = torch.tensor(step_num)
             for i, layer in enumerate(self.layer_modules):
@@ -220,6 +224,11 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
                 states_k = prev_k #Update states with k & v values from previous splits
                 states_v = prev_v
+
+                if onmt.Constants.cudaActivated and onmt.Constants.debug:
+                    print('Position 6')
+                    print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
+                    print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done
@@ -838,18 +847,21 @@ class TransformerMemoryCompressed(NMTModel):
         tgt = tgt.transpose(0, 1)
 
         if self.cudaBool and onmt.Constants.debug:
+            print('Position 2')
             print('Max Memory allocated (Before encoder forward 1): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (Before encoder forward 1): ' + str(torch.cuda.memory_allocated()))
 
         context, src_mask = self.encoder(src, grow=grow)
 
         if self.cudaBool and onmt.Constants.debug:
+            print('Position 3')
             print('Max Memory allocated (After encoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (After encoder forward): ' + str(torch.cuda.memory_allocated()))
 
         output, coverage = self.decoder(tgt, context, src, grow=grow)
 
         if self.cudaBool and onmt.Constants.debug:
+            print('Position 4')
             print('Max Memory allocated (After decoder forward): ' + str(torch.cuda.max_memory_allocated()))
             print('Real Memory allocated (After decoder forward): ' + str(torch.cuda.memory_allocated()))
 

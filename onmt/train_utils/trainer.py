@@ -230,13 +230,19 @@ class XETrainer(BaseTrainer):
                     #batch.cuda()
                     #TODO: D.S: Batch is transfered to GPU here.
 
-                if self.cuda and onmt.Constants.debug:
+                if onmt.Constants.cudaActivated and onmt.Constants.debug:
+                    print('Position 7')
                     print('Max Memory allocated (After init): ' + str(torch.cuda.max_memory_allocated()))
                     print('Real Memory allocated (After init): ' + str(torch.cuda.memory_allocated()))
 
                 outputs = self.model(batch)
                     
                 targets = batch.get('target_output')
+
+                if onmt.Constants.cudaActivated and onmt.Constants.debug:
+                    print('Position 8')
+                    print('Max Memory allocated (After init): ' + str(torch.cuda.max_memory_allocated()))
+                    print('Real Memory allocated (After init): ' + str(torch.cuda.memory_allocated()))
 
                 if onmt.Constants.memoryCompressionActivated:
                     targets = targets.cuda()
