@@ -274,7 +274,7 @@ class PositionalEncoding(nn.Module):
         if len_seq > self.len_max:
             self.renew(len_seq)
 
-        if self.cuda:
+        if self.cuda and not onmt.Constants.memoryCompressionActivated:
             word_emb = word_emb.cuda()
             self.pos_emb = self.pos_emb.cuda()
 

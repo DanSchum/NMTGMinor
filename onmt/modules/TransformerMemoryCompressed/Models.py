@@ -127,7 +127,7 @@ class TransformerEncoderMemoryCompressed(nn.Module):
         """ Scale the emb by sqrt(d_model) """
 
         if emb.is_cuda:
-            print('emb is cuda here')
+            print('emb is cuda here 1')
 
         emb = emb * math.sqrt(self.model_size)
 
