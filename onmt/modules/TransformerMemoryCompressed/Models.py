@@ -140,6 +140,12 @@ class TransformerEncoderMemoryCompressed(nn.Module):
 
         # ~ pad_mask = input.ne(onmt.Constants.PAD)) # batch_size x len_src
 
+        if emb.is_cuda:
+            print('emb is cuda here 2')
+        else:
+            print('emb is not cuda here 2')
+
+
         context = emb.transpose(0, 1).contiguous()
 
         if context.is_cuda:
