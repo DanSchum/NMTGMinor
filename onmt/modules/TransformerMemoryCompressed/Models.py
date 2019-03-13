@@ -196,6 +196,8 @@ class TransformerEncoderMemoryCompressed(nn.Module):
                     first = False
                 split = split.cuda()
                 context = context.cuda()
+                if splits.is_cuda():
+                    print("Complete Splits is already cuda: BAD!!!")
 
             step_tensor = torch.tensor(step_num)
             for i, layer in enumerate(self.layer_modules):
