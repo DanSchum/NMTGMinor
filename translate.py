@@ -98,6 +98,7 @@ def getSentenceFromTokens(tokens, input_type):
 
 def main():
     opt = parser.parse_args()
+    print(opt)
     opt.cuda = opt.gpu > -1
     if opt.cuda:
         torch.cuda.set_device(opt.gpu)
