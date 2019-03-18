@@ -620,17 +620,34 @@ class GeneratorCoverageMechanism(nn.Module):
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
-        for index, singleWordLogits in enumerate(logits[:,]):
-            if onmt.Constants.modePreviousProbsSoftmax == 1:
-                scores = torch.topk(singleWordLogits, 4, dim=-1)
-                avgProbTable[index, scores[1]] = scores[0]
-            else:
-                scores = singleWordLogits
-                avgProbTable[index, ] = scores
 
+        if onmt.Constants.modePreviousProbsSoftmax == 1:
+            scores = torch.topk(logits, 4, dim=-1)
+            avgProbTable.scatter_(1, scores[1], scores[0])
+        elif onmt.Constants.modePreviousProbsSoftmax == 2:
+            avgProbTable = logits
+        else:
+            raise NotImplementedError
+
+
+        for index, singleAvg in enumerate(avgProbTable[:,]):
             if index > 0:
-                #Accumulate the avg probabilites for each word and all previous words
-                avgProbTable[index,] += avgProbTable[(index - 1), ]
+                # Accumulate the avg probabilites for each word and all previous words
+                avgProbTable[index,] += avgProbTable[(index - 1),]
+
+
+        #Old Implementation --> slow
+        # for index, singleWordLogits in enumerate(logits[:,]):
+        #     if onmt.Constants.modePreviousProbsSoftmax == 1:
+        #         scores = torch.topk(singleWordLogits, 4, dim=-1)
+        #         avgProbTable[index, scores[1]] = scores[0]
+        #     else:
+        #         scores = singleWordLogits
+        #         avgProbTable[index, ] = scores
+        #
+        #     if index > 0:
+        #         #Accumulate the avg probabilites for each word and all previous words
+        #         avgProbTable[index,] += avgProbTable[(index - 1), ]
 
         avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
 
