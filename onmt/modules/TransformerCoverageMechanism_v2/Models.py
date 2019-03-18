@@ -1,7 +1,7 @@
 import numpy as np
 import torch, math
 import torch.nn as nn
-from onmt.modules.Transformer.Layers import EncoderLayer, DecoderLayer, PositionalEncoding, variational_dropout, PrePostProcessing
+from onmt.modules.TransformerCoverageMechanism_v2.Layers import EncoderLayer, DecoderLayer, PositionalEncoding, variational_dropout, PrePostProcessing
 from onmt.modules.BaseModel import NMTModel, Reconstructor, DecoderState
 import onmt
 from onmt.modules.WordDrop import embedded_dropout

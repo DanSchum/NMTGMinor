@@ -65,6 +65,7 @@ def build_model(opt, dicts):
         from onmt.modules.TransformerCoverageMechanism_v2.Models import Transformer, TransformerDecoder, \
             TransformerEncoder, GeneratorCoverageMechanism
 
+
         onmt.Constants.init_value = opt.param_init
 
         if opt.time == 'positional_encoding':
