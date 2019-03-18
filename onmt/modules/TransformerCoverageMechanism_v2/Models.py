@@ -110,9 +110,6 @@ class TransformerEncoder(nn.Module):
 
             #D.S: TODO: self.training is never set, so if always fails
             if len(self.layer_modules) - i <= onmt.Constants.checkpointing and self.training:
-                if onmt.Constants.cudaActivated:
-                    print('Position 8')
-                    print('Real Memory allocated: ' + str(torch.cuda.memory_allocated()))
                 context = checkpoint(custom_layer(layer), context, mask_src)
 
             else:
