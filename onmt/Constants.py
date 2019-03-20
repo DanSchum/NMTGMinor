@@ -13,3 +13,5 @@ checkpointing = 1
 static = False
 residual_type = 'regular'
 max_position_length = 512
+
+cudaActivated = 0
