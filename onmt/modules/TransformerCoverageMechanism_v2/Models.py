@@ -620,7 +620,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if onmt.Constants.modePreviousProbsSoftmax == 1:
             scores = torch.topk(logits, 4, dim=-1)
-            avgProbTable.scatter_(1, scores[1], scores[0])
+            avgProbTable.scatter_(-1, scores[1], scores[0])
         elif onmt.Constants.modePreviousProbsSoftmax == 2:
             avgProbTable = logits
         else:
@@ -649,7 +649,8 @@ class GeneratorCoverageMechanism(nn.Module):
         avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
 
         #make copy of word frequency model
-        localWordFrequencyModel = wordFrequencyModel[0, ]
+        #localWordFrequencyModel = wordFrequencyModel[0, ]
+        localWordFrequencyModel = wordFrequencyModel
         if onmt.Constants.cudaActivated:
             localWordFrequencyModel = localWordFrequencyModel.cuda()
         localWordFrequencyModel = localWordFrequencyModel.repeat(input.size()[0], 1)
