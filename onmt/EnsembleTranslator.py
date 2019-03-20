@@ -218,8 +218,10 @@ class EnsembleTranslator(object):
             
             #  (2) if a target is specified, compute the 'goldScore'
             #  (i.e. log likelihood) of the target under the model
+            localWordFrequencyModel = wordFrequencyModel.detach()
+
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
-                gen_t = model_.generator(dec_t, wordFrequencyModel)
+                gen_t = model_.generator(dec_t, localWordFrequencyModel)
                 tgt_t = tgt_t.unsqueeze(1)
                 scores = gen_t.data.gather(1, tgt_t)
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
@@ -263,7 +265,9 @@ class EnsembleTranslator(object):
             # require batch first for everything
             outs = dict()
             attns = dict()
-            
+
+            localWordFrequencyModel = wordFrequencyModel.detach()
+
             for i in range(self.n_models):
                 decoder_hidden, coverage = self.models[i].decoder.step(decoder_input.clone(), decoder_states[i])
                 
@@ -272,7 +276,7 @@ class EnsembleTranslator(object):
                 attns[i] = coverage[:, -1, :].squeeze(1) # batch * beam x src_len
                 
                 # batch * beam x vocab_size 
-                outs[i] = self.models[i].generator(decoder_hidden, wordFrequencyModel)
+                outs[i] = self.models[i].generator(decoder_hidden, localWordFrequencyModel)
             
             out = self._combineOutputs(outs)
             attn = self._combineAttention(attns)
