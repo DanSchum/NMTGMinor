@@ -178,7 +178,7 @@ def main():
             if len(srcBatch) == 0:
                 break
 
-            predBatch, predScore, predLength, goldScore, numGoldWords  = translator.translate(srcBatch,
+        predBatch, predScore, predLength, goldScore, numGoldWords  = translator.translate(srcBatch,
                                                                                     tgtBatch)
         if opt.normalize and opt.version == 1.0:
             predBatch_ = []
