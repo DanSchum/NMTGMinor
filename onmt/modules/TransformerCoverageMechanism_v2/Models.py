@@ -571,18 +571,15 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
-        didUnsqueeze = False
-        if logits.size()[0] == 1:
-            logits = logits.squeeze()
-            didUnsqueeze = True
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
 
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
-            logits = logits.cuda()
 
 
         if onmt.Constants.modePreviousProbsSoftmax == 1:
+            #Currently problematic during infinite values in translation. This crashes scatter function
+            '''
             scores = torch.topk(logits, 4, dim=-1)
             if onmt.Constants.cudaActivated:
                 values = scores[0].cuda()
@@ -590,27 +587,15 @@ class GeneratorCoverageMechanism(nn.Module):
             else:
                 values = scores[0]
                 indices = scores[1]
-            if onmt.Constants.debugMode:
-                print('avgTable.size(): ' +str(avgProbTable.size()))
-                print('scores[1].size(): ' +str(scores[1].size()))
-                print('scores[0].size(): ' +str(scores[0].size()))
-                print('indices_ ' + str(indices))
-                print('values: ' + str(values))
-
+ 
             avgProbTable.scatter_(0, indices, values)
+            '''
 
-            if onmt.Constants.debugMode:
-                print('avgProbTable.size(): ' + str(avgProbTable.size()))
+            avgProbTable = logits
         elif onmt.Constants.modePreviousProbsSoftmax == 2:
             avgProbTable = logits
         else:
             raise NotImplementedError
-
-        if didUnsqueeze:
-            logits = logits.unsqueeze(0)
-            avgProbTable = avgProbTable.unsqueeze(0)
-
-
 
         #Problem was the moment avgProbTable is having three Dimensions in translation
 
@@ -637,11 +622,11 @@ class GeneratorCoverageMechanism(nn.Module):
         if previousProbs is not None:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode on.')
-            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel)# + (self.weightsAvgProbTable * previousProbs)
+            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel) + (self.weightsAvgProbTable * previousProbs)
         else:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode off.')
-            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel)# + (self.weightsAvgProbTable * avgProbTable)
+            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel) + (self.weightsAvgProbTable * avgProbTable)
 
         if onmt.Constants.cudaActivated and not logitsMixed.is_cuda:
             if onmt.Constants.debugMode:
