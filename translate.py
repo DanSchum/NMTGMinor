@@ -72,6 +72,8 @@ parser.add_argument('-weightAvgProbSoftmax', type=float, default=0.05,
                     help="Weight of average probability of already selected words")
 parser.add_argument('-weightWordFrequencyModelSoftmax', type=float, default=0.05,
                     help="Weight of word frequency of source words")
+parser.add_argument('-debugMode', action='store_true',
+                    help='Activate debug mode to see more prints')
 
 
 def reportScore(name, scoreTotal, wordsTotal):
@@ -109,6 +111,8 @@ def main():
     onmt.Constants.weightWordFrequency = opt.weightWordFrequencyModelSoftmax
     onmt.Constants.weightAvgProb = opt.weightAvgProbSoftmax
     onmt.Constants.weightStdSoftmax = 1 - (onmt.Constants.weightWordFrequency + onmt.Constants.weightAvgProb)
+    onmt.Constants.debugMode = opt.debugMode
+
     if opt.cuda:
         torch.cuda.set_device(opt.gpu)
     

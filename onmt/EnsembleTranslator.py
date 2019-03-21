@@ -221,6 +221,10 @@ class EnsembleTranslator(object):
             localWordFrequencyModel = wordFrequencyModel.detach()
 
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
+                if onmt.Constants.debugMode:
+                    print('dec_t.size: ' + str(dec_t.size()))
+                    print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
+
                 gen_t = model_.generator(dec_t, localWordFrequencyModel)
                 tgt_t = tgt_t.unsqueeze(1)
                 scores = gen_t.data.gather(1, tgt_t)
@@ -274,8 +278,13 @@ class EnsembleTranslator(object):
                 # take the last decoder state
                 decoder_hidden = decoder_hidden.squeeze(1)
                 attns[i] = coverage[:, -1, :].squeeze(1) # batch * beam x src_len
-                
-                # batch * beam x vocab_size 
+
+                if onmt.Constants.debugMode:
+                    print('decoder_hidden: ' + str(decoder_hidden.size()))
+                    print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
+
+
+                # batch * beam x vocab_size
                 outs[i] = self.models[i].generator(decoder_hidden, localWordFrequencyModel)
             
             out = self._combineOutputs(outs)
