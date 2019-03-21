@@ -532,7 +532,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         #If translation mode is on, probabilities of previous words are saved until manual clear
-        self.translationModeOn = False
+        #self.translationModeOn = False
 
         #Just vector weights for additinal softmax components to reduce parameters
         self.weightsAvgProbTable = WeightParameterVector(torch.zeros(output_size))
@@ -553,8 +553,8 @@ class GeneratorCoverageMechanism(nn.Module):
         #Avg Word Probability containing the previous words, is used to reduce probability of future words, if they already used in output
 
 
-    def setTranslationModeOn(self):
-        self.translationModeOn = True
+    #def setTranslationModeOn(self):
+    #    self.translationModeOn = True
 
     def forward(self, input, wordFrequencyModel, previousProbs=None, log_softmax=True):
         '''
@@ -570,7 +570,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
-        '''
+
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
 
         if onmt.Constants.cudaActivated:
@@ -592,7 +592,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if previousProbs is not None:
             #Add the current probabilites to the previous probabilites
-            previousProbs += avgProbTable
+            #previousProbs += avgProbTable
             if onmt.Constants.debugMode:
                 print('Translation mode is on, no loop in generator forward executed.' )
         else:
@@ -608,7 +608,7 @@ class GeneratorCoverageMechanism(nn.Module):
         #if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
         #    localWordFrequencyModel = localWordFrequencyModel.cuda()
 
-        '''
+
         if previousProbs is not None:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode on.')
@@ -634,6 +634,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         return output, previousProbs
 
+    '''
     def resetPreviousProbabilities(self, length):
         self.previousProbs = torch.zeros((length, self.output_size), dtype=torch.float)  # D.S: Dimension (target_vocabulary)
         #self.previousProbs = self.previousProbs.unsqueeze(0)
@@ -648,6 +649,7 @@ class GeneratorCoverageMechanism(nn.Module):
             previousProbs = previousProbs.cuda()
 
         return previousProbs
+    '''
 
 
 class WeightParameterVector(nn.Parameter):
