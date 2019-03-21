@@ -596,6 +596,9 @@ class GeneratorCoverageMechanism(nn.Module):
                 print('scores[0].size(): ' +str(scores[0].size()))
 
             avgProbTable.scatter_(-1, indices, values)
+
+            if onmt.Constants.debugMode:
+                print('avgProbTable.size(): ' + avgProbTable.size())
         elif onmt.Constants.modePreviousProbsSoftmax == 2:
             avgProbTable = logits
         else:
