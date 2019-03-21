@@ -223,7 +223,7 @@ class EnsembleTranslator(object):
             if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
                 localWordFrequencyModel = localWordFrequencyModel.cuda()
 
-            model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
+            #model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
             #model_.generator.resetPreviousProbabilities(1)
             #previousProbabilitesInclTgt = model_.generator.generatePreviousProbabilitiesTensor(1)
             previousProbabilitesInclTgt = torch.zeros((1, vocab_size), dtype=torch.float)
