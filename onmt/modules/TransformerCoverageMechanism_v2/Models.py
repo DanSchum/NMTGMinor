@@ -615,6 +615,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
+        '''
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
 
@@ -630,9 +631,8 @@ class GeneratorCoverageMechanism(nn.Module):
         for index, singleAvg in enumerate(avgProbTable[:,]):
             if index > 0:
                 # Accumulate the avg probabilites for each word and all previous words
-                avgProbTable = avgProbTable
-                #avgProbTable[index,] += avgProbTable[(index - 1),]
-
+                avgProbTable[index,] += avgProbTable[(index - 1),]
+        '''
 
         #Old Implementation --> slow
         # for index, singleWordLogits in enumerate(logits[:,]):
