@@ -570,7 +570,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
-        '''
+
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
 
         if onmt.Constants.cudaActivated:
@@ -584,7 +584,7 @@ class GeneratorCoverageMechanism(nn.Module):
             avgProbTable = logits
         else:
             raise NotImplementedError
-
+        '''
 
         #Problem was the moment avgProbTable is having three Dimensions in translation
 
