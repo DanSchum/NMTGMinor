@@ -375,7 +375,7 @@ class EnsembleTranslator(object):
         
         torch.set_grad_enabled(True)
 
-        model_.generator.resetAfterExample()
+        #model_.generator.resetAfterExample()
         return allHyp, allScores, allAttn, allLengths, goldScores, goldWords
 
     def translate(self, srcBatch, goldBatch):
