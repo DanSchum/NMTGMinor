@@ -556,7 +556,7 @@ class GeneratorCoverageMechanism(nn.Module):
     def setTranslationModeOn(self):
         self.translationModeOn = True
 
-    def forward(self, input, wordFrequencyModel, log_softmax=True):
+    def forward(self, input, wordFrequencyModel, previousProbs=None, log_softmax=True):
         '''
         :param input:
         :param wordFrequencyModel:
@@ -589,9 +589,9 @@ class GeneratorCoverageMechanism(nn.Module):
 
         #print(str())
 
-        if self.translationModeOn:
+        if previousProbs != None:
             #Add the current probabilites to the previous probabilites
-            self.previousProbs += avgProbTable
+            previousProbs += avgProbTable
             if onmt.Constants.debugMode:
                 print('Translation mode is on, no loop in generator forward executed.' )
         else:
@@ -608,27 +608,45 @@ class GeneratorCoverageMechanism(nn.Module):
         #    localWordFrequencyModel = localWordFrequencyModel.cuda()
 
 
-        if self.translationModeOn:
-            logitsMixed = logits #+ (self.weightsAvgProbTable * self.previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+        if previousProbs != None:
+            if onmt.Constants.debugMode:
+                print('set logitsMixed with translation mode on.')
+            logitsMixed = logits + (self.weightsAvgProbTable * previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
         else:
+            if onmt.Constants.debugMode:
+                print('set logitsMixed with translation mode off.')
             logitsMixed = logits + (self.weightsAvgProbTable * avgProbTable) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
 
         if onmt.Constants.cudaActivated and not logitsMixed.is_cuda:
+            if onmt.Constants.debugMode:
+                print('logitsMixed was not already on gpu.')
             logitsMixed = logitsMixed.cuda()
 
 
         if log_softmax:
+            if onmt.Constants.debugMode:
+                print('Used softmax')
+
             output = F.log_softmax(logitsMixed, dim=-1)
         else:
             output = logits
 
-        return output
+        return output, previousProbs
 
     def resetPreviousProbabilities(self, length):
         self.previousProbs = torch.zeros((length, self.output_size), dtype=torch.float)  # D.S: Dimension (target_vocabulary)
         #self.previousProbs = self.previousProbs.unsqueeze(0)
         if onmt.Constants.cudaActivated:
             self.previousProbs = self.previousProbs.cuda()
+
+
+    def generatePreviousProbabilitiesTensor(self, length):
+        previousProbs = torch.zeros((length, self.output_size), dtype=torch.float)  # D.S: Dimension (target_vocabulary)
+        #self.previousProbs = self.previousProbs.unsqueeze(0)
+        if onmt.Constants.cudaActivated:
+            previousProbs = previousProbs.cuda()
+
+        return previousProbs
 
 
 class WeightParameterVector(nn.Parameter):

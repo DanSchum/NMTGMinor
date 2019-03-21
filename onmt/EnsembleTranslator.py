@@ -224,13 +224,14 @@ class EnsembleTranslator(object):
                 localWordFrequencyModel = localWordFrequencyModel.cuda()
 
             model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
-            model_.generator.resetPreviousProbabilities(1)
+            #model_.generator.resetPreviousProbabilities(1)
+            previousProbabilitesInclTgt = model_.generator.generatePreviousProbabilitiesTensor(1)
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
                 if onmt.Constants.debugMode:
                     print('dec_t.size: ' + str(dec_t.size()))
                     print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
-                gen_t = model_.generator(dec_t, localWordFrequencyModel)
+                gen_t = model_.generator(dec_t, localWordFrequencyModel, previousProbs=previousProbabilitesInclTgt)
                 tgt_t = tgt_t.unsqueeze(1)
                 scores = gen_t.data.gather(1, tgt_t)
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
@@ -258,7 +259,9 @@ class EnsembleTranslator(object):
             decoder_states[i] = self.models[i].create_decoder_state(src, contexts[i], src_mask, beamSize, type='old')
 
         self.models[0].generator.setTranslationModeOn() #D.s. Activate translation mode for this generator to save previous words
-        self.models[0].generator.resetPreviousProbabilities(beamSize)
+        #self.models[0].generator.resetPreviousProbabilities(beamSize)
+        previousProbabilitesNoTgt = self.models[0].generator.generatePreviousProbabilitiesTensor(beamSize)
+
 
         localWordFrequencyModel = wordFrequencyModel.detach()
         if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
@@ -300,7 +303,7 @@ class EnsembleTranslator(object):
                     print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
                 # batch * beam x vocab_size
-                outs[i] = self.models[i].generator(decoder_hidden, localWordFrequencyModel)
+                outs[i],  = self.models[i].generator(decoder_hidden, localWordFrequencyModel, previousProbs=previousProbabilitesNoTgt)
 
                 outs[i] = outs[i].unsqueeze(0)
 
