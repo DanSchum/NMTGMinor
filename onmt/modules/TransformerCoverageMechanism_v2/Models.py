@@ -630,7 +630,8 @@ class GeneratorCoverageMechanism(nn.Module):
         for index, singleAvg in enumerate(avgProbTable[:,]):
             if index > 0:
                 # Accumulate the avg probabilites for each word and all previous words
-                avgProbTable[index,] += avgProbTable[(index - 1),]
+                avgProbTable = avgProbTable
+                #avgProbTable[index,] += avgProbTable[(index - 1),]
 
 
         #Old Implementation --> slow
