@@ -235,7 +235,7 @@ class EnsembleTranslator(object):
                     print('dec_t.size: ' + str(dec_t.size()))
                     print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
-                gen_t = model_.generator(dec_t, localWordFrequencyModel, previousProbs=previousProbabilitesInclTgt)
+                gen_t, previousProbabilitesInclTgt = model_.generator(dec_t, localWordFrequencyModel, previousProbs=previousProbabilitesInclTgt)
                 tgt_t = tgt_t.unsqueeze(1)
                 scores = gen_t.data.gather(1, tgt_t)
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
@@ -309,7 +309,7 @@ class EnsembleTranslator(object):
                     print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
                 # batch * beam x vocab_size
-                outs[i],  = self.models[i].generator(decoder_hidden, localWordFrequencyModel, previousProbs=previousProbabilitesNoTgt)
+                outs[i], previousProbabilitesNoTgt = self.models[i].generator(decoder_hidden, localWordFrequencyModel, previousProbs=previousProbabilitesNoTgt)
 
                 outs[i] = outs[i].unsqueeze(0)
 
