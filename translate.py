@@ -68,12 +68,15 @@ parser.add_argument('-fp16', action='store_true',
                     help='To use floating point 16 in decoding')
 parser.add_argument('-gpu', type=int, default=-1,
                     help="Device to run on")
-parser.add_argument('-weightAvgProbSoftmax', type=float, default=0.05,
-                    help="Weight of average probability of already selected words")
-parser.add_argument('-weightWordFrequencyModelSoftmax', type=float, default=0.05,
-                    help="Weight of word frequency of source words")
+parser.add_argument('-weightAvgProb', type=float, default=0.2,
+                    help="Weight for interpolation in softmax for avg probabilities")  # D.S:
+parser.add_argument('-weightWordFrequency', type=float, default=0.2,
+                    help="Weight for interpolation in softmax for word frequency model")  # D.S:
+parser.add_argument('-modePreviousProbsSoftmax', type=int, default=1,
+                    help="Mode for previous probs in softmax")  # D.S:
 parser.add_argument('-debugMode', action='store_true',
                     help='Activate debug mode to see more prints')
+
 
 
 def reportScore(name, scoreTotal, wordsTotal):
@@ -112,6 +115,7 @@ def main():
     onmt.Constants.weightAvgProb = opt.weightAvgProbSoftmax
     onmt.Constants.weightStdSoftmax = 1 - (onmt.Constants.weightWordFrequency + onmt.Constants.weightAvgProb)
     onmt.Constants.debugMode = opt.debugMode
+    onmt.Constants.modePreviousProbsSoftmax = opt.modePreviousProbsSoftmax
 
     opt.batch_size = 1 #Always set batch_size to 1 (D.S. hot fix)
 
