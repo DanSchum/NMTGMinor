@@ -570,26 +570,6 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
-
-
-        # D.S: output has dim: (batch_size_sentences x Target_vocab)
-        #For beam search the k (std 4) largest values by torch.topk are taken as the words with highest scores.
-
-        # sumLogits = abs(torch.sum(logits))
-        # maxLogits = torch.max(logits)
-        # maxIndex = torch.argmax(logits)
-        # minLogits = torch.min(logits)
-        # minIndex = torch.argmin(logits)
-        # meanLogits = torch.mean(logits)
-        # testValue = abs(maxLogits/meanLogits)/meanLogits
-        # #self.avgProb = (self.avgProb + logits) / sumLogits
-        #
-
-        #if logits.is_cuda:
-        #    logits = logits.cpu()
-
-
-
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
 
         if onmt.Constants.cudaActivated:
@@ -611,84 +591,17 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if self.translationModeOn:
             #Add the current probabilites to the previous probabilites
-            self.previousProbs += avgProbTable
+            #self.previousProbs += avgProbTable
             if onmt.Constants.debugMode:
                 print('Translation mode is on, no loop in generator forward executed.' )
         else:
+            if onmt.Constants.debugMode:
+                print('Loop over previous words is running.' )
             for index, singleAvg in enumerate(avgProbTable[:, ]):
                 if index > 0:
                     # Accumulate the avg probabilites for each word and all previous words
                     avgProbTable[index,] += avgProbTable[(index - 1),]
 
-
-
-        #Old Implementation --> slow
-        # for index, singleWordLogits in enumerate(logits[:,]):
-        #     if onmt.Constants.modePreviousProbsSoftmax == 1:
-        #         scores = torch.topk(singleWordLogits, 4, dim=-1)
-        #         avgProbTable[index, scores[1]] = scores[0]
-        #     else:
-        #         scores = singleWordLogits
-        #         avgProbTable[index, ] = scores
-        #
-        #     if index > 0:
-        #         #Accumulate the avg probabilites for each word and all previous words
-        #         avgProbTable[index,] += avgProbTable[(index - 1), ]
-
-        #avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
-
-        #make copy of word frequency model
-        #localWordFrequencyModel = wordFrequencyModel[0, ]
-
-        #localWordFrequencyModel = localWordFrequencyModel.repeat(input.size()[0], 1)
-        #localWordFrequencyModel = onmt.Constants.weightWordFrequency * localWordFrequencyModel
-
-
-
-        '''
-        if logits.is_cuda:
-            logits = logits.cpu()
-        meanLogits = torch.mean(logits)
-        topScores = torch.topk(logits, 4, dim=-1)
-        topScoresTensor = topScores[0]
-        topScoresTensor = torch.abs(topScoresTensor / meanLogits)
-        self.avgProb[topScores[1]] = torch.sigmoid(self.avgProb[topScores[1]] + topScoresTensor)
-        '''
-
-
-        # sumavgprob = abs(torch.sum(self.avgProb ))
-        # maxavgprob= torch.max(self.avgProb )
-        # maxIndexavgprob = torch.argmax(self.avgProb )
-        # minavgprob = torch.min(self.avgProb )
-        # minIndexavgprob = torch.argmin(self.avgProb )
-        # meanavgprob = torch.mean(self.avgProb )
-        # topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
-
-
-        #logits and output contains negative values. In beam search the maximum values are taken as top scores (means the smallest negative values)
-        #To reduce the probability of token, reduce value, to increase probability, increase the value
-
-        #if logits.is_cuda:
-        #    wordFrequencyModel = wordFrequencyModel.cuda()
-        #    self.avgProb = self.avgProb.cuda()
-
-        #if onmt.Constants.cudaActivated:
-        #    avgProbTable = avgProbTable.cuda()
-        #    localWordFrequencyModel = localWordFrequencyModel.cuda()
-
-
-
-        #weightedAvgProb = self.linearAvgProbInput(avgProbTable).float()
-        #weightedAvgProb = self.linearAvgProbOutput(weightedAvgProb).float()
-        #weightedWordFrequencyModel = self.linearWordFrequencyModelInput(localWordFrequencyModel).float()
-        #weightedWordFrequencyModel = self.linearWordFrequencyModelOutput(weightedWordFrequencyModel).float()
-
-        #if not logits.is_cuda and onmt.Constants.cudaActivated:
-        #    logits = logits.cuda()
-
-        #logitsMixed = (logits + weightedWordFrequencyModel - weightedAvgProb)
-        #logitsMixed = self.bilinearAvgProbOutput(logits, weightedAvgProb).float()
-        #logitsMixed = self.bilinearWordFrequencyModelOutput(logitsMixed, weightedWordFrequencyModel).float()
 
         localWordFrequencyModel = wordFrequencyModel
         if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
@@ -702,26 +615,12 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if onmt.Constants.cudaActivated:
             logitsMixed = logitsMixed.cuda()
-        #if logits.is_cuda:
-            #self.avgProb = self.avgProb.cpu()
 
-        # sumLogits = abs(torch.sum(logitsMixed))
-        # maxLogits = torch.max(logitsMixed)
-        # maxIndex = torch.argmax(logitsMixed)
-        # minLogits = torch.min(logitsMixed)
-        # minIndex = torch.argmin(logitsMixed)
-        # meanLogits = torch.mean(logitsMixed)
 
         if log_softmax:
             output = F.log_softmax(logitsMixed, dim=-1)
         else:
             output = logits
-
-        # maxLogitsAfterSoftmax = torch.max(output)
-        # maxIndexAfterSoftmax = torch.argmax(output)
-        # minLogitsAfterSoftmax = torch.min(output)
-        # minIndexAfterSoftmax = torch.argmin(output)
-        # meanAfterSoftmax = torch.mean(output)
 
         return output
 
@@ -730,15 +629,6 @@ class GeneratorCoverageMechanism(nn.Module):
         #self.previousProbs = self.previousProbs.unsqueeze(0)
         if onmt.Constants.cudaActivated:
             self.previousProbs = self.previousProbs.cuda()
-
-        '''
-        #topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
-        #self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
-        if onmt.Constants.cudaActivated:
-            print('Reset of avg model for new sequence is done')
-            print('Avg model is cuda')
-            #self.avgProb = self.avgProb.cuda()
-        '''
 
 
 class WeightParameterVector(nn.Parameter):
