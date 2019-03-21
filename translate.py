@@ -112,8 +112,8 @@ def main():
     print(opt)
     opt.cuda = opt.gpu > -1
     onmt.Constants.cudaActivated = opt.gpu > -1
-    onmt.Constants.weightWordFrequency = opt.weightWordFrequencyModelSoftmax
-    onmt.Constants.weightAvgProb = opt.weightAvgProbSoftmax
+    onmt.Constants.weightWordFrequency = opt.weightWordFrequency
+    onmt.Constants.weightAvgProb = opt.weightAvgProb
     onmt.Constants.weightStdSoftmax = 1 - (onmt.Constants.weightWordFrequency + onmt.Constants.weightAvgProb)
     onmt.Constants.debugMode = opt.debugMode
     onmt.Constants.modePreviousProbsSoftmax = opt.modePreviousProbsSoftmax
