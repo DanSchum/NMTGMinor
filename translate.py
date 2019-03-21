@@ -78,7 +78,6 @@ parser.add_argument('-debugMode', action='store_true',
                     help='Activate debug mode to see more prints')
 
 
-
 def reportScore(name, scoreTotal, wordsTotal):
     print("%s AVG SCORE: %.4f, %s PPL: %.4f" % (
         name, scoreTotal / wordsTotal,

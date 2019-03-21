@@ -517,7 +517,7 @@ class TransformerDecodingState(DecoderState):
         
 class GeneratorCoverageMechanism(nn.Module):
 
-    def __init__(self, hidden_size, output_size, beam_size=4):
+    def __init__(self, hidden_size, output_size):
         super(GeneratorCoverageMechanism, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
@@ -532,18 +532,17 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         #If translation mode is on, probabilities of previous words are saved until manual clear
-        #self.translationModeOn = False
+        self.translationModeOn = False
 
         #Just vector weights for additinal softmax components to reduce parameters
         self.weightsAvgProbTable = WeightParameterVector(torch.zeros(output_size))
         self.weightsWordFrequencyModel = WeightParameterVector(torch.zeros(output_size))
         self.weightsAvgProbTable.initWeights()
         self.weightsWordFrequencyModel.initWeights()
-        self.beam_size = beam_size
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
-        #self.previousProbs = None #Important Init this before forward(...) by using reset
+        self.previousProbs = None #Important Init this before forward(...) by using reset
         #self.previousProbs = torch.zeros(self.output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
         #self.previousProbs = self.previousProbs.unsqueeze(0)
         #if onmt.Constants.cudaActivated:
@@ -554,10 +553,10 @@ class GeneratorCoverageMechanism(nn.Module):
         #Avg Word Probability containing the previous words, is used to reduce probability of future words, if they already used in output
 
 
-    #def setTranslationModeOn(self):
-    #    self.translationModeOn = True
+    def setTranslationModeOn(self):
+        self.translationModeOn = True
 
-    def forward(self, input, wordFrequencyModel, previousProbs=None, log_softmax=True):
+    def forward(self, input, wordFrequencyModel, log_softmax=True):
         '''
         :param input:
         :param wordFrequencyModel:
@@ -571,6 +570,10 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
+
+
+
+
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
 
         if onmt.Constants.cudaActivated:
@@ -578,88 +581,65 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         if onmt.Constants.modePreviousProbsSoftmax == 1:
-            #Currently problematic during infinite values in translation. This crashes scatter function
-            '''
-            scores = torch.topk(logits, 4, dim=-1)
-            if onmt.Constants.cudaActivated:
-                values = scores[0].cuda()
-                indices = scores[1].cuda()
-            else:
-                values = scores[0]
-                indices = scores[1]
- 
-            avgProbTable.scatter_(0, indices, values)
-            '''
-
+            #Currently not in use, because of problem with infinite values in translation. This end in index out of bounds exception of scatter.
+            #scores = torch.topk(logits, 4, dim=-1)
+            #avgProbTable.scatter_(-1, scores[1], scores[0])
             avgProbTable = logits
         elif onmt.Constants.modePreviousProbsSoftmax == 2:
             avgProbTable = logits
         else:
             raise NotImplementedError
 
+
         #Problem was the moment avgProbTable is having three Dimensions in translation
 
         #print(str())
 
-        if previousProbs is not None:
+        if self.translationModeOn:
             #Add the current probabilites to the previous probabilites
-            previousProbs += avgProbTable
-            if onmt.Constants.debugMode:
-                print('Translation mode is on, no loop in generator forward executed.' )
+            self.previousProbs += avgProbTable
         else:
-            if onmt.Constants.debugMode:
-                print('Loop over previous words is running.' )
             for index, singleAvg in enumerate(avgProbTable[:, ]):
                 if index > 0:
                     # Accumulate the avg probabilites for each word and all previous words
                     avgProbTable[index,] += avgProbTable[(index - 1),]
 
         localWordFrequencyModel = wordFrequencyModel
-        #if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
-        #    localWordFrequencyModel = localWordFrequencyModel.cuda()
+        if onmt.Constants.cudaActivated:
+            localWordFrequencyModel = localWordFrequencyModel.cuda()
 
 
-        if previousProbs is not None:
-            if onmt.Constants.debugMode:
-                print('set logitsMixed with translation mode on.')
-            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel) + (self.weightsAvgProbTable * previousProbs)
+        if self.translationModeOn:
+            logitsMixed = logits + (self.weightsAvgProbTable * self.previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
         else:
-            if onmt.Constants.debugMode:
-                print('set logitsMixed with translation mode off.')
-            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel) + (self.weightsAvgProbTable * avgProbTable)
+            logitsMixed = logits + (self.weightsAvgProbTable * avgProbTable) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
 
-        if onmt.Constants.cudaActivated and not logitsMixed.is_cuda:
-            if onmt.Constants.debugMode:
-                print('logitsMixed was not already on gpu.')
+        if onmt.Constants.cudaActivated:
             logitsMixed = logitsMixed.cuda()
 
 
         if log_softmax:
-            if onmt.Constants.debugMode:
-                print('Used softmax')
-
             output = F.log_softmax(logitsMixed, dim=-1)
         else:
             output = logits
 
-        return output, previousProbs
 
-    '''
+        return output
+
     def resetPreviousProbabilities(self, length):
         self.previousProbs = torch.zeros((length, self.output_size), dtype=torch.float)  # D.S: Dimension (target_vocabulary)
         #self.previousProbs = self.previousProbs.unsqueeze(0)
         if onmt.Constants.cudaActivated:
             self.previousProbs = self.previousProbs.cuda()
 
-
-    def generatePreviousProbabilitiesTensor(self, length):
-        previousProbs = torch.zeros((length, self.output_size), dtype=torch.float)  # D.S: Dimension (target_vocabulary)
-        #self.previousProbs = self.previousProbs.unsqueeze(0)
+        '''
+        #topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
+        #self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
         if onmt.Constants.cudaActivated:
-            previousProbs = previousProbs.cuda()
-
-        return previousProbs
-    '''
+            print('Reset of avg model for new sequence is done')
+            print('Avg model is cuda')
+            #self.avgProb = self.avgProb.cuda()
+        '''
 
 
 class WeightParameterVector(nn.Parameter):

@@ -220,25 +220,15 @@ class EnsembleTranslator(object):
             #  (2) if a target is specified, compute the 'goldScore'
             #  (i.e. log likelihood) of the target under the model
             localWordFrequencyModel = wordFrequencyModel.detach()
-            if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
-                localWordFrequencyModel = localWordFrequencyModel.cuda()
 
-            #model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
-            #model_.generator.resetPreviousProbabilities(1)
-            #previousProbabilitesInclTgt = model_.generator.generatePreviousProbabilitiesTensor(1)
-            previousProbabilitesInclTgt = torch.zeros((1, vocab_size), dtype=torch.float)
-            if onmt.Constants.cudaActivated:
-                previousProbabilitesInclTgt = previousProbabilitesInclTgt.cuda()
-
-            if onmt.Constants.debugMode:
-                print('previousProbabilitesInclTgt: ' + str(previousProbabilitesInclTgt.size()))
-
+            model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
+            model_.generator.resetPreviousProbabilities(1)
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
                 if onmt.Constants.debugMode:
                     print('dec_t.size: ' + str(dec_t.size()))
                     print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
-                gen_t, previousProbabilitesInclTgt = model_.generator(dec_t, localWordFrequencyModel, previousProbs=previousProbabilitesInclTgt)
+                gen_t = model_.generator(dec_t, localWordFrequencyModel)
                 tgt_t = tgt_t.unsqueeze(1)
                 scores = gen_t.data.gather(1, tgt_t)
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
@@ -265,20 +255,8 @@ class EnsembleTranslator(object):
         for i in range(self.n_models):
             decoder_states[i] = self.models[i].create_decoder_state(src, contexts[i], src_mask, beamSize, type='old')
 
-        #self.models[0].generator.setTranslationModeOn() #D.s. Activate translation mode for this generator to save previous words
-        #self.models[0].generator.resetPreviousProbabilities(beamSize)
-        #previousProbabilitesNoTgt = self.models[0].generator.generatePreviousProbabilitiesTensor(beamSize)
-        previousProbabilitesNoTgt = torch.zeros((beamSize, vocab_size), dtype=torch.float)
-        if onmt.Constants.cudaActivated:
-            previousProbabilitesNoTgt = previousProbabilitesNoTgt.cuda()
-
-        if onmt.Constants.debugMode:
-            print('previousProbabilitesNoTgt: ' + str(previousProbabilitesNoTgt.size()))
-
-        localWordFrequencyModel = wordFrequencyModel.detach()
-        if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
-            localWordFrequencyModel = localWordFrequencyModel.cuda()
-
+        self.models[0].generator.setTranslationModeOn() #D.s. Activate translation mode for this generator to save previous words
+        self.models[0].generator.resetPreviousProbabilities(beamSize)
         for i in range(self.opt.max_sent_length):
             # Prepare decoder input.
             
@@ -296,6 +274,8 @@ class EnsembleTranslator(object):
             # require batch first for everything
             outs = dict()
             attns = dict()
+
+            localWordFrequencyModel = wordFrequencyModel.detach()
 
             for i in range(self.n_models):
                 decoder_hidden, coverage = self.models[i].decoder.step(decoder_input.clone(), decoder_states[i])
@@ -315,7 +295,7 @@ class EnsembleTranslator(object):
                     print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
                 # batch * beam x vocab_size
-                outs[i], previousProbabilitesNoTgt = self.models[i].generator(decoder_hidden, localWordFrequencyModel, previousProbs=previousProbabilitesNoTgt)
+                outs[i] = self.models[i].generator(decoder_hidden, localWordFrequencyModel)
 
                 outs[i] = outs[i].unsqueeze(0)
 
@@ -404,7 +384,6 @@ class EnsembleTranslator(object):
         batch = dataset.next()[0]
         wordFrequencyModel = self.tgt_dict.createWordFrequencyModel(srcBatch, self.tgt_dict.size(),
                                                                     onmt.Constants.UNK_WORD)  # D.S: srcBatch, lenTargetVocabulary, unkWord - Create WordFrequencyModel based on target vocabulary and current srcBat
-
         if onmt.Constants.cudaActivated == True:
             batch.cuda()
         # ~ batch = self.to_variable(dataset.next()[0])
