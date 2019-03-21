@@ -592,7 +592,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if previousProbs is not None:
             #Add the current probabilites to the previous probabilites
-            #previousProbs += avgProbTable
+            previousProbs += avgProbTable
             if onmt.Constants.debugMode:
                 print('Translation mode is on, no loop in generator forward executed.' )
         else:
@@ -604,7 +604,7 @@ class GeneratorCoverageMechanism(nn.Module):
                     avgProbTable[index,] += avgProbTable[(index - 1),]
 
 
-        localWordFrequencyModel = wordFrequencyModel
+        #localWordFrequencyModel = wordFrequencyModel
         #if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
         #    localWordFrequencyModel = localWordFrequencyModel.cuda()
 
@@ -612,11 +612,11 @@ class GeneratorCoverageMechanism(nn.Module):
         if previousProbs is not None:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode on.')
-            logitsMixed = logits# + (self.weightsAvgProbTable * previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+            logitsMixed = logits + (self.weightsAvgProbTable * previousProbs)# + (self.weightsWordFrequencyModel * localWordFrequencyModel)
         else:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode off.')
-            logitsMixed = logits# + (self.weightsAvgProbTable * avgProbTable) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+            logitsMixed = logits + (self.weightsAvgProbTable * avgProbTable)# + (self.weightsWordFrequencyModel * localWordFrequencyModel)
 
         if onmt.Constants.cudaActivated and not logitsMixed.is_cuda:
             if onmt.Constants.debugMode:
