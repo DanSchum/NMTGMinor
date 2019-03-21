@@ -691,7 +691,7 @@ class GeneratorCoverageMechanism(nn.Module):
         #logitsMixed = self.bilinearWordFrequencyModelOutput(logitsMixed, weightedWordFrequencyModel).float()
 
         localWordFrequencyModel = wordFrequencyModel
-        if onmt.Constants.cudaActivated:
+        if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
             localWordFrequencyModel = localWordFrequencyModel.cuda()
 
 
