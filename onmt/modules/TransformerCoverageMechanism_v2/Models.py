@@ -589,7 +589,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         #print(str())
 
-        if previousProbs != None:
+        if previousProbs is not None:
             #Add the current probabilites to the previous probabilites
             previousProbs += avgProbTable
             if onmt.Constants.debugMode:
@@ -608,7 +608,7 @@ class GeneratorCoverageMechanism(nn.Module):
         #    localWordFrequencyModel = localWordFrequencyModel.cuda()
 
 
-        if previousProbs != None:
+        if previousProbs is not None:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode on.')
             logitsMixed = logits + (self.weightsAvgProbTable * previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)

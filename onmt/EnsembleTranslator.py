@@ -226,6 +226,10 @@ class EnsembleTranslator(object):
             model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
             #model_.generator.resetPreviousProbabilities(1)
             previousProbabilitesInclTgt = model_.generator.generatePreviousProbabilitiesTensor(1)
+
+            if onmt.Constants.debugMode:
+                print('previousProbabilitesInclTgt: ' + str(previousProbabilitesInclTgt.size()))
+
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
                 if onmt.Constants.debugMode:
                     print('dec_t.size: ' + str(dec_t.size()))
@@ -262,6 +266,8 @@ class EnsembleTranslator(object):
         #self.models[0].generator.resetPreviousProbabilities(beamSize)
         previousProbabilitesNoTgt = self.models[0].generator.generatePreviousProbabilitiesTensor(beamSize)
 
+        if onmt.Constants.debugMode:
+            print('previousProbabilitesNoTgt: ' + str(previousProbabilitesNoTgt.size()))
 
         localWordFrequencyModel = wordFrequencyModel.detach()
         if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
