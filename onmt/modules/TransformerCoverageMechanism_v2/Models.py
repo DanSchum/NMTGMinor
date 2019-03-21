@@ -570,7 +570,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
-
+        '''
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
 
         if onmt.Constants.cudaActivated:
@@ -602,9 +602,9 @@ class GeneratorCoverageMechanism(nn.Module):
                 if index > 0:
                     # Accumulate the avg probabilites for each word and all previous words
                     avgProbTable[index,] += avgProbTable[(index - 1),]
+        '''
 
-
-        #localWordFrequencyModel = wordFrequencyModel
+        localWordFrequencyModel = wordFrequencyModel
         #if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
         #    localWordFrequencyModel = localWordFrequencyModel.cuda()
 
@@ -612,11 +612,11 @@ class GeneratorCoverageMechanism(nn.Module):
         if previousProbs is not None:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode on.')
-            logitsMixed = logits + (self.weightsAvgProbTable * previousProbs)# + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel)# + (self.weightsAvgProbTable * previousProbs)
         else:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode off.')
-            logitsMixed = logits + (self.weightsAvgProbTable * avgProbTable)# + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+            logitsMixed = logits + (self.weightsWordFrequencyModel * localWordFrequencyModel)# + (self.weightsAvgProbTable * avgProbTable)
 
         if onmt.Constants.cudaActivated and not logitsMixed.is_cuda:
             if onmt.Constants.debugMode:
