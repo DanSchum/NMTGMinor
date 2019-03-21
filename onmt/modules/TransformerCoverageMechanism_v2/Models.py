@@ -575,7 +575,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
-
+        '''
 
         if onmt.Constants.modePreviousProbsSoftmax == 1:
             scores = torch.topk(logits, 4, dim=-1)
@@ -584,7 +584,7 @@ class GeneratorCoverageMechanism(nn.Module):
             avgProbTable = logits
         else:
             raise NotImplementedError
-        '''
+        
 
         #Problem was the moment avgProbTable is having three Dimensions in translation
 
