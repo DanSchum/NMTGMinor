@@ -220,6 +220,8 @@ class EnsembleTranslator(object):
             #  (2) if a target is specified, compute the 'goldScore'
             #  (i.e. log likelihood) of the target under the model
             localWordFrequencyModel = wordFrequencyModel.detach()
+            if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
+                localWordFrequencyModel = localWordFrequencyModel.cuda()
 
             model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
             model_.generator.resetPreviousProbabilities(1)
@@ -257,6 +259,11 @@ class EnsembleTranslator(object):
 
         self.models[0].generator.setTranslationModeOn() #D.s. Activate translation mode for this generator to save previous words
         self.models[0].generator.resetPreviousProbabilities(beamSize)
+
+        localWordFrequencyModel = wordFrequencyModel.detach()
+        if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
+            localWordFrequencyModel = localWordFrequencyModel.cuda()
+
         for i in range(self.opt.max_sent_length):
             # Prepare decoder input.
             
@@ -274,8 +281,6 @@ class EnsembleTranslator(object):
             # require batch first for everything
             outs = dict()
             attns = dict()
-
-            localWordFrequencyModel = wordFrequencyModel.detach()
 
             for i in range(self.n_models):
                 decoder_hidden, coverage = self.models[i].decoder.step(decoder_input.clone(), decoder_states[i])
@@ -384,6 +389,7 @@ class EnsembleTranslator(object):
         batch = dataset.next()[0]
         wordFrequencyModel = self.tgt_dict.createWordFrequencyModel(srcBatch, self.tgt_dict.size(),
                                                                     onmt.Constants.UNK_WORD)  # D.S: srcBatch, lenTargetVocabulary, unkWord - Create WordFrequencyModel based on target vocabulary and current srcBat
+
         if onmt.Constants.cudaActivated == True:
             batch.cuda()
         # ~ batch = self.to_variable(dataset.next()[0])

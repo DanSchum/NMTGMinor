@@ -604,8 +604,8 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         localWordFrequencyModel = wordFrequencyModel
-        if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
-            localWordFrequencyModel = localWordFrequencyModel.cuda()
+        #if onmt.Constants.cudaActivated and not localWordFrequencyModel.is_cuda:
+        #    localWordFrequencyModel = localWordFrequencyModel.cuda()
 
 
         if self.translationModeOn:
