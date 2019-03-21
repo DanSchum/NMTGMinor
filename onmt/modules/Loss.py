@@ -195,6 +195,8 @@ class NMTLossFunc(LossFuncBase):
         distsList = []
         for indexBatchSentence in range(batch_size):
             indices = torch.tensor([indexBatchSentence])
+            if onmt.Constants.cudaActivated:
+                indices = indices.cuda()
             batchSingleSentence = torch.index_select(outputs, 1, indices)
             batchSingleSentence = batchSingleSentence.squeeze()
             #Run generator seperate for each sentence in batch to store previous words for each sentence seperatly
