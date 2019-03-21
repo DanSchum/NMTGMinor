@@ -169,12 +169,12 @@ class NMTLossFunc(LossFuncBase):
         original_outputs = outputs
         batch_size = outputs.size(1)
         h_size = outputs.size(-1)
-        
+
         # flatten the output
-        outputs = outputs.contiguous().view(-1, outputs.size(-1))
-        targets = targets.view(-1)
-        
-        
+        #outputs = outputs.contiguous().view(-1, outputs.size(-1))
+        #targets = targets.view(-1)
+
+        '''
         if mask is not None:
             """ We remove all positions with PAD 
                 to save memory on unwanted positions
@@ -189,11 +189,27 @@ class NMTLossFunc(LossFuncBase):
         
         else:
             clean_input = outputs
-            clean_targets = targets
-        
-        dists = generator(clean_input, wordFrequencyModel)
-        
-        loss, loss_data = self._compute_loss(dists, clean_targets)
+            clean_targets = targetsspeaker
+        '''
+
+        distsList = []
+        for indexBatchSentence in range(batch_size):
+            indices = torch.tensor([indexBatchSentence])
+            batchSingleSentence = torch.index_select(outputs, 1, indices)
+            batchSingleSentence = batchSingleSentence.squeeze()
+            #Run generator seperate for each sentence in batch to store previous words for each sentence seperatly
+            dist = generator(batchSingleSentence, wordFrequencyModel[indexBatchSentence,])
+            dist = dist.unsqueeze(1)
+            distsList.append(dist)
+
+
+        dists_concat = torch.cat(distsList, 1)
+
+        # flatten the output
+        dists_concat = dists_concat.contiguous().view(-1, dists_concat.size(-1))
+        clean_targets = targets.view(-1)
+
+        loss, loss_data = self._compute_loss(dists_concat, clean_targets)
         
         if backward:
             loss.div(normalizer).backward()

@@ -154,7 +154,7 @@ class Dict(object):
 
         return labels
 
-    def createWordFrequencyModel(self, srcBatch, lenTargetVocabulary, unkWord):
+    def createWordFrequencyModel(self, srcBatch, lenTargetVocabulary, unkWord, relativeModel=False):
         '''
         Create wordFrequencyModel on word frequencies from sequence. wordFrequencyModel is based on target vocabulary.
         :param sequence:
@@ -174,6 +174,8 @@ class Dict(object):
 
             for word in vec:
                 wordFrequencyModel[index, word] = wordFrequencyModel[index, word] + 1
+            if relativeModel:
+                wordFrequencyModel[index] = wordFrequencyModel[index] / len(vec)
             wordFrequencyModel[index] = wordFrequencyModel[index] / len(vec)
 
         return wordFrequencyModel

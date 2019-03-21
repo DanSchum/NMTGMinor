@@ -113,6 +113,8 @@ def main():
     onmt.Constants.weightStdSoftmax = 1 - (onmt.Constants.weightWordFrequency + onmt.Constants.weightAvgProb)
     onmt.Constants.debugMode = opt.debugMode
 
+    opt.batch_size = 1 #Always set batch_size to 1 (D.S. hot fix)
+
     if opt.cuda:
         torch.cuda.set_device(opt.gpu)
     

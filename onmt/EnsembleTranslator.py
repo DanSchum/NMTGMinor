@@ -207,6 +207,7 @@ class EnsembleTranslator(object):
         if tgtBatch is not None:
             # Use the first model to decode
             model_ = self.models[0]
+
         
             tgtBatchInput = tgtBatch[:-1]
             tgtBatchOutput = tgtBatch[1:]
@@ -220,6 +221,8 @@ class EnsembleTranslator(object):
             #  (i.e. log likelihood) of the target under the model
             localWordFrequencyModel = wordFrequencyModel.detach()
 
+            model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
+            model_.generator.resetPreviousProbabilities(1)
             for dec_t, tgt_t in zip(output, tgtBatchOutput.data):
                 if onmt.Constants.debugMode:
                     print('dec_t.size: ' + str(dec_t.size()))
@@ -231,7 +234,7 @@ class EnsembleTranslator(object):
                 scores.masked_fill_(tgt_t.eq(onmt.Constants.PAD), 0)
                 goldScores += scores.squeeze(1).type_as(goldScores)
                 goldWords += tgt_t.ne(onmt.Constants.PAD).sum().item()
-            model_.generator.resetAfterExample()
+
 
             
         #  (3) Start decoding
@@ -251,7 +254,9 @@ class EnsembleTranslator(object):
         
         for i in range(self.n_models):
             decoder_states[i] = self.models[i].create_decoder_state(src, contexts[i], src_mask, beamSize, type='old')
-        
+
+        self.models[0].generator.setTranslationModeOn() #D.s. Activate translation mode for this generator to save previous words
+        self.models[0].generator.resetPreviousProbabilities(beamSize)
         for i in range(self.opt.max_sent_length):
             # Prepare decoder input.
             
@@ -274,7 +279,7 @@ class EnsembleTranslator(object):
 
             for i in range(self.n_models):
                 decoder_hidden, coverage = self.models[i].decoder.step(decoder_input.clone(), decoder_states[i])
-                
+
                 # take the last decoder state
                 decoder_hidden = decoder_hidden.squeeze(1)
                 attns[i] = coverage[:, -1, :].squeeze(1) # batch * beam x src_len
@@ -283,9 +288,22 @@ class EnsembleTranslator(object):
                     print('decoder_hidden: ' + str(decoder_hidden.size()))
                     print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
+                decoder_hidden = decoder_hidden.squeeze()
+
+                if onmt.Constants.debugMode:
+                    print('decoder_hidden: ' + str(decoder_hidden.size()))
+                    print('localWordFrequencyModel: ' + str(localWordFrequencyModel.size()))
 
                 # batch * beam x vocab_size
                 outs[i] = self.models[i].generator(decoder_hidden, localWordFrequencyModel)
+
+                outs[i] = outs[i].unsqueeze(0)
+
+
+                if onmt.Constants.debugMode:
+                    print('outs[i]: ' + str(outs[i].size()))
+
+
             
             out = self._combineOutputs(outs)
             attn = self._combineAttention(attns)
@@ -324,8 +342,7 @@ class EnsembleTranslator(object):
 
             remainingSents = len(active)
 
-        model_.generator.resetAfterExample()
-            
+
         #  (4) package everything up
         allHyp, allScores, allAttn = [], [], []
         n_best = self.opt.n_best

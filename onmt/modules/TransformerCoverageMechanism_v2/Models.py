@@ -529,41 +529,10 @@ class GeneratorCoverageMechanism(nn.Module):
         torch.nn.init.uniform_(self.linear.weight, -stdv, stdv)
 
         self.linear.bias.data.zero_()
-        #intermediateSize = 10
 
-        '''
-        self.linearAvgProbInput = nn.Linear(output_size, intermediateSize)
-        #self.linearAvgProbOutput = nn.Linear(intermediateSize, output_size)
-        #self.linearAcutalProb = nn.Linear(hidden_size, output_size)
-        self.linearWordFrequencyModelInput = nn.Linear(output_size, intermediateSize)
-        #self.linearWordFrequencyModelOutput = nn.Linear(intermediateSize, output_size)
-        self.bilinearAvgProbOutput = nn.Bilinear(output_size, intermediateSize, output_size)
-        self.bilinearWordFrequencyModelOutput = nn.Bilinear(output_size, intermediateSize, output_size)
 
-        if onmt.Constants.cudaActivated:
-            print('Generator Linears are cuda')
-            self.linearAvgProbInput = self.linearAvgProbInput.cuda()
-            #self.linearAvgProbOutput = self.linearAvgProbOutput.cuda()
-            self.linearWordFrequencyModelInput = self.linearWordFrequencyModelInput.cuda()
-            #self.linearWordFrequencyModelOutput = self.linearWordFrequencyModelOutput.cuda()
-            self.bilinearAvgProbOutput = self.bilinearAvgProbOutput.cuda()
-            self.bilinearWordFrequencyModelOutput = self.bilinearWordFrequencyModelOutput.cuda()
-
-        torch.nn.init.uniform_(self.linearAvgProbInput.weight, -stdv, stdv)
-        #torch.nn.init.uniform_(self.linearAvgProbOutput.weight, -stdv, stdv)
-        torch.nn.init.uniform_(self.linearWordFrequencyModelInput.weight, -stdv, stdv)
-        #torch.nn.init.uniform_(self.linearWordFrequencyModelOutput.weight, -stdv, stdv)
-        torch.nn.init.uniform_(self.bilinearAvgProbOutput.weight, -stdv, stdv)
-        torch.nn.init.uniform_(self.bilinearWordFrequencyModelOutput.weight, -stdv, stdv)
-
-        self.linearAvgProbInput.bias.data.zero_()
-        #self.linearAvgProbOutput.bias.data.zero_()
-        self.linearWordFrequencyModelInput.bias.data.zero_()
-        #self.linearWordFrequencyModelOutput.bias.data.zero_()
-        self.bilinearAvgProbOutput.bias.data.zero_()
-        self.bilinearWordFrequencyModelOutput.bias.data.zero_()
-        '''
-
+        #If translation mode is on, probabilities of previous words are saved until manual clear
+        self.translationModeOn = False
 
         #Just vector weights for additinal softmax components to reduce parameters
         self.weightsAvgProbTable = WeightParameterVector(torch.zeros(output_size))
@@ -573,12 +542,19 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
-        #self.avgProb = torch.zeros(output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
+        self.previousProbs = None #Important Init this before forward(...) by using reset
+        #self.previousProbs = torch.zeros(self.output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
+        #self.previousProbs = self.previousProbs.unsqueeze(0)
+        #if onmt.Constants.cudaActivated:
+        #    self.previousProbs = self.previousProbs.cuda()
         #if onmt.Constants.cudaActivated:
         #    print('Avg model is cuda')
             #self.avgProb = self.avgProb.cuda()
         #Avg Word Probability containing the previous words, is used to reduce probability of future words, if they already used in output
 
+
+    def setTranslationModeOn(self):
+        self.translationModeOn = True
 
     def forward(self, input, wordFrequencyModel, log_softmax=True):
         '''
@@ -619,7 +595,7 @@ class GeneratorCoverageMechanism(nn.Module):
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
 
-        '''
+
         if onmt.Constants.modePreviousProbsSoftmax == 1:
             scores = torch.topk(logits, 4, dim=-1)
             avgProbTable.scatter_(-1, scores[1], scores[0])
@@ -629,11 +605,20 @@ class GeneratorCoverageMechanism(nn.Module):
             raise NotImplementedError
 
 
-        for index, singleAvg in enumerate(avgProbTable[:,]):
-            if index > 0:
-                # Accumulate the avg probabilites for each word and all previous words
-                avgProbTable[index,] += avgProbTable[(index - 1),]
-        '''
+        #Problem was the moment avgProbTable is having three Dimensions in translation
+
+        #print(str())
+
+        if self.translationModeOn:
+            #Add the current probabilites to the previous probabilites
+            self.previousProbs += avgProbTable
+        else:
+            for index, singleAvg in enumerate(avgProbTable[:, ]):
+                if index > 0:
+                    # Accumulate the avg probabilites for each word and all previous words
+                    avgProbTable[index,] += avgProbTable[(index - 1),]
+
+
 
         #Old Implementation --> slow
         # for index, singleWordLogits in enumerate(logits[:,]):
@@ -648,15 +633,13 @@ class GeneratorCoverageMechanism(nn.Module):
         #         #Accumulate the avg probabilites for each word and all previous words
         #         avgProbTable[index,] += avgProbTable[(index - 1), ]
 
-        avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
+        #avgProbTable = onmt.Constants.weightAvgProb * avgProbTable
 
         #make copy of word frequency model
         #localWordFrequencyModel = wordFrequencyModel[0, ]
-        localWordFrequencyModel = wordFrequencyModel
-        if onmt.Constants.cudaActivated:
-            localWordFrequencyModel = localWordFrequencyModel.cuda()
-        localWordFrequencyModel = localWordFrequencyModel.repeat(input.size()[0], 1)
-        localWordFrequencyModel = onmt.Constants.weightWordFrequency * localWordFrequencyModel
+
+        #localWordFrequencyModel = localWordFrequencyModel.repeat(input.size()[0], 1)
+        #localWordFrequencyModel = onmt.Constants.weightWordFrequency * localWordFrequencyModel
 
 
 
@@ -705,7 +688,15 @@ class GeneratorCoverageMechanism(nn.Module):
         #logitsMixed = self.bilinearAvgProbOutput(logits, weightedAvgProb).float()
         #logitsMixed = self.bilinearWordFrequencyModelOutput(logitsMixed, weightedWordFrequencyModel).float()
 
-        logitsMixed = logits + (self.weightsAvgProbTable * avgProbTable) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+        localWordFrequencyModel = wordFrequencyModel
+        if onmt.Constants.cudaActivated:
+            localWordFrequencyModel = localWordFrequencyModel.cuda()
+
+
+        if self.translationModeOn:
+            logitsMixed = logits + (self.weightsAvgProbTable * self.previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+        else:
+            logitsMixed = logits + (self.weightsAvgProbTable * avgProbTable) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
 
         if onmt.Constants.cudaActivated:
             logitsMixed = logitsMixed.cuda()
@@ -732,7 +723,12 @@ class GeneratorCoverageMechanism(nn.Module):
 
         return output
 
-    def resetAfterExample(self):
+    def resetPreviousProbabilities(self, length):
+        self.previousProbs = torch.zeros((length, self.output_size), dtype=torch.float)  # D.S: Dimension (target_vocabulary)
+        #self.previousProbs = self.previousProbs.unsqueeze(0)
+        if onmt.Constants.cudaActivated:
+            self.previousProbs = self.previousProbs.cuda()
+
         '''
         #topScoresAvg = torch.topk(self.avgProb, 100, dim=0)
         #self.avgProb = torch.zeros(self.output_size, dtype=torch.float)
