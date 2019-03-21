@@ -615,10 +615,11 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
-        '''
+
         if onmt.Constants.cudaActivated:
             avgProbTable = avgProbTable.cuda()
 
+        '''
         if onmt.Constants.modePreviousProbsSoftmax == 1:
             scores = torch.topk(logits, 4, dim=-1)
             avgProbTable.scatter_(-1, scores[1], scores[0])
