@@ -542,7 +542,7 @@ class GeneratorCoverageMechanism(nn.Module):
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
-        self.previousProbs = None #Important Init this before forward(...) by using reset
+        #self.previousProbs = None #Important Init this before forward(...) by using reset
         #self.previousProbs = torch.zeros(self.output_size, dtype=torch.float) #D.S: Dimension (target_vocabulary)
         #self.previousProbs = self.previousProbs.unsqueeze(0)
         #if onmt.Constants.cudaActivated:
@@ -611,7 +611,7 @@ class GeneratorCoverageMechanism(nn.Module):
         if previousProbs is not None:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode on.')
-            logitsMixed = logits + (self.weightsAvgProbTable * previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
+            logitsMixed = logits# + (self.weightsAvgProbTable * previousProbs) + (self.weightsWordFrequencyModel * localWordFrequencyModel)
         else:
             if onmt.Constants.debugMode:
                 print('set logitsMixed with translation mode off.')
