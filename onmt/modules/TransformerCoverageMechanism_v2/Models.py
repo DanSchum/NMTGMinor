@@ -595,6 +595,7 @@ class GeneratorCoverageMechanism(nn.Module):
                 print('scores[1].size(): ' +str(scores[1].size()))
                 print('scores[0].size(): ' +str(scores[0].size()))
                 print('indices_ ' + str(indices))
+                print('values: ' + str(values))
 
             avgProbTable.scatter_(0, indices, values)
 
