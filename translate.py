@@ -109,6 +109,7 @@ def getSentenceFromTokens(tokens, input_type):
 
 def main():
     opt = parser.parse_args()
+    print(opt)
     opt.cuda = opt.gpu > -1
     onmt.Constants.cudaActivated = opt.gpu > -1
     onmt.Constants.weightWordFrequency = opt.weightWordFrequencyModelSoftmax
