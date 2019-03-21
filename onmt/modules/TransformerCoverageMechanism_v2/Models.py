@@ -612,6 +612,8 @@ class GeneratorCoverageMechanism(nn.Module):
         if self.translationModeOn:
             #Add the current probabilites to the previous probabilites
             self.previousProbs += avgProbTable
+            if onmt.Constants.debugMode:
+                print('Translation mode is on, no loop in generator forward executed.' )
         else:
             for index, singleAvg in enumerate(avgProbTable[:, ]):
                 if index > 0:
