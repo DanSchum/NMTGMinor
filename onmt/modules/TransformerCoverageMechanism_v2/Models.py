@@ -595,7 +595,7 @@ class GeneratorCoverageMechanism(nn.Module):
                 print('scores[1].size(): ' +str(scores[1].size()))
                 print('scores[0].size(): ' +str(scores[0].size()))
 
-            avgProbTable.scatter_(-1, indices, values)
+            avgProbTable.scatter_(0, indices, values)
 
             if onmt.Constants.debugMode:
                 print('avgProbTable.size(): ' + str(avgProbTable.size()))
