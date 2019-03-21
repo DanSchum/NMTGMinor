@@ -225,7 +225,10 @@ class EnsembleTranslator(object):
 
             model_.generator.setTranslationModeOn()  # D.S. Activate Translation mode to store previous words until manual reset
             #model_.generator.resetPreviousProbabilities(1)
-            previousProbabilitesInclTgt = model_.generator.generatePreviousProbabilitiesTensor(1)
+            #previousProbabilitesInclTgt = model_.generator.generatePreviousProbabilitiesTensor(1)
+            previousProbabilitesInclTgt = torch.zeros((1, vocab_size), dtype=torch.float)
+            if onmt.Constants.cudaActivated:
+                previousProbabilitesInclTgt = previousProbabilitesInclTgt.cuda()
 
             if onmt.Constants.debugMode:
                 print('previousProbabilitesInclTgt: ' + str(previousProbabilitesInclTgt.size()))
@@ -262,9 +265,12 @@ class EnsembleTranslator(object):
         for i in range(self.n_models):
             decoder_states[i] = self.models[i].create_decoder_state(src, contexts[i], src_mask, beamSize, type='old')
 
-        self.models[0].generator.setTranslationModeOn() #D.s. Activate translation mode for this generator to save previous words
+        #self.models[0].generator.setTranslationModeOn() #D.s. Activate translation mode for this generator to save previous words
         #self.models[0].generator.resetPreviousProbabilities(beamSize)
-        previousProbabilitesNoTgt = self.models[0].generator.generatePreviousProbabilitiesTensor(beamSize)
+        #previousProbabilitesNoTgt = self.models[0].generator.generatePreviousProbabilitiesTensor(beamSize)
+        previousProbabilitesNoTgt = torch.zeros((beamSize, vocab_size), dtype=torch.float)
+        if onmt.Constants.cudaActivated:
+            previousProbabilitesNoTgt = previousProbabilitesNoTgt.cuda()
 
         if onmt.Constants.debugMode:
             print('previousProbabilitesNoTgt: ' + str(previousProbabilitesNoTgt.size()))
