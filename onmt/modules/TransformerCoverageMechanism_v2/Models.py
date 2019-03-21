@@ -517,7 +517,7 @@ class TransformerDecodingState(DecoderState):
         
 class GeneratorCoverageMechanism(nn.Module):
 
-    def __init__(self, hidden_size, output_size):
+    def __init__(self, hidden_size, output_size, beam_size=4):
         super(GeneratorCoverageMechanism, self).__init__()
         self.hidden_size = hidden_size
         self.output_size = output_size
@@ -539,6 +539,7 @@ class GeneratorCoverageMechanism(nn.Module):
         self.weightsWordFrequencyModel = WeightParameterVector(torch.zeros(output_size))
         self.weightsAvgProbTable.initWeights()
         self.weightsWordFrequencyModel.initWeights()
+        self.beam_size = beam_size
 
 
         #D.S: New Tensor keeping the average probability of all previous words in this example
@@ -570,7 +571,10 @@ class GeneratorCoverageMechanism(nn.Module):
 
         logits = self.linear(input).float()
 
-
+        didUnsqueeze = False
+        if logits.size()[0] == 1:
+            logits = logits.squeeze()
+            didUnsqueeze = True
         avgProbTable = torch.zeros(logits.size(), dtype=torch.float)
 
         if onmt.Constants.cudaActivated:
@@ -580,12 +584,16 @@ class GeneratorCoverageMechanism(nn.Module):
 
         if onmt.Constants.modePreviousProbsSoftmax == 1:
             scores = torch.topk(logits, 4, dim=-1)
-            avgProbTable = logits
-            #avgProbTable.scatter_(-1, scores[1], scores[0])
+            avgProbTable.scatter_(-1, scores[1], scores[0])
         elif onmt.Constants.modePreviousProbsSoftmax == 2:
             avgProbTable = logits
         else:
             raise NotImplementedError
+
+        if didUnsqueeze:
+            logits = logits.unsqueeze(0)
+            avgProbTable = avgProbTable.unsqueeze(0)
+
 
 
         #Problem was the moment avgProbTable is having three Dimensions in translation
