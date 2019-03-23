@@ -66,6 +66,8 @@ parser.add_argument('-fp16', action='store_true',
                     help='To use floating point 16 in decoding')
 parser.add_argument('-gpu', type=int, default=-1,
                     help="Device to run on")
+parser.add_argument('-preferLongestOutputs', action="store_true",
+                    help='Activate to prefer longest possible outputs')
 
 
 def reportScore(name, scoreTotal, wordsTotal):
@@ -179,8 +181,22 @@ def main():
                 predBatch_.append([bb[s] for s in sidx])
                 predScore_.append([ss_[s] for s in sidx])
             predBatch = predBatch_
-            predScore = predScore_    
-                                                              
+            predScore = predScore_
+
+            if opt.preferLongestOutputs:
+                sortedPredictions = []
+                for index, prediction in enumerate(predBatch[0]):
+                    sortedPredictions.append((index, len(prediction)))
+                sortedPredictions.sort(key=lambda x: x[1], reverse=True)
+
+            predBatchCopy = predBatch
+            predScoreCopy = predScore
+
+            for index, sortedPrediction in enumerate(sortedPredictions):
+                predBatch[0][index] = predBatchCopy[0][sortedPredictions[index][0]]
+                predScore[0][index] = predScoreCopy[0][sortedPredictions[index][0]]
+
+
         predScoreTotal += sum(score[0] for score in predScore)
         predWordsTotal += sum(len(x[0]) for x in predBatch)
         if tgtF is not None:

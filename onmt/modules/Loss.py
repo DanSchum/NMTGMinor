@@ -191,8 +191,8 @@ class NMTLossFunc(LossFuncBase):
             clean_input = outputs
             clean_targets = targets
         
-        dists = generator(clean_input)
-        
+        dists = generator(clean_input) #Dists Dimension: (words x target_vocab)
+
         loss, loss_data = self._compute_loss(dists, clean_targets)
         
         if backward:
