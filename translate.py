@@ -189,12 +189,12 @@ def main():
                     sortedPredictions.append((index, len(prediction)))
                 sortedPredictions.sort(key=lambda x: x[1], reverse=True)
 
-            predBatchCopy = predBatch
-            predScoreCopy = predScore
+                predBatchCopy = predBatch
+                predScoreCopy = predScore
 
-            for index, sortedPrediction in enumerate(sortedPredictions):
-                predBatch[0][index] = predBatchCopy[0][sortedPredictions[index][0]]
-                predScore[0][index] = predScoreCopy[0][sortedPredictions[index][0]]
+                for index, sortedPrediction in enumerate(sortedPredictions):
+                    predBatch[0][index] = predBatchCopy[0][sortedPredictions[index][0]]
+                    predScore[0][index] = predScoreCopy[0][sortedPredictions[index][0]]
 
 
         predScoreTotal += sum(score[0] for score in predScore)
