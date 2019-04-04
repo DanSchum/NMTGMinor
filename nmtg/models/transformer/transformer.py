@@ -174,7 +174,7 @@ class Transformer(EncoderDecoderModel):
         opts.positional_encoding = positional_encoding
         opts.ignore_context = args.ignore_context
         opts.checkpointing = args.checkpointing
-        opts.share_encoder_decoder = args.share_enc_dec_weights
+        #opts.share_encoder_decoder = args.share_enc_dec_weights
         opts.single_head_final_layer = args.single_head_final_layer
 
         return opts

@@ -67,6 +67,8 @@ class NMTTrainer(Trainer):
                             help='Probability to replace a word with the unknown word (0 to disable)')
         parser.add_argument('-noise_word_dropout', type=float, default=0.1,
                             help='Probability to remove a word (0 to disable)')
+        parser.add_argument('-no_repeat_ngram_size', type=int, default=0,
+                            help='Do not repeat ngrams with this size (0 to disable)')
 
     @classmethod
     def _add_train_data_options(cls, parser, argv=None):
@@ -419,7 +421,7 @@ class NMTTrainer(Trainer):
     def _get_sequence_generator(self, task):
         return SequenceGenerator([self.model], self.tgt_dict, self.model.batch_first,
                                  self.args.beam_size, maxlen_b=20, normalize_scores=self.args.normalize,
-                                 len_penalty=self.args.alpha, unk_penalty=self.args.beta)
+                                 len_penalty=self.args.alpha, unk_penalty=self.args.beta, no_repeat_ngram_size=self.args.no_repeat_ngram_size)
 
     def _restore_src_string(self, task, output, join_str, bpe_symbol):
         return self.src_dict.string(output, join_str=join_str, bpe_symbol=bpe_symbol)
