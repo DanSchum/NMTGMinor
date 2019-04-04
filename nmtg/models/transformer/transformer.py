@@ -374,9 +374,11 @@ class TransformerDecoder(IncrementalDecoder):
 
         for i, layer in enumerate(self.layers):
             if self.checkpointing > 0 and self.training and (i + 1) % self.checkpointing == 0:
-                decoder_inputs, attention = torch.utils.checkpoint.checkpoint(
-                    layer, decoder_inputs, encoder_outputs, decoder_mask,
-                    encoder_mask, self_attention_bias, encoder_attention_bias)
+                decoder_inputs, attention = layer(decoder_inputs, encoder_outputs, decoder_mask,
+                                                  encoder_mask, self_attention_bias, encoder_attention_bias)
+                #decoder_inputs, attention = torch.utils.checkpoint.checkpoint(
+                #    layer, decoder_inputs, encoder_outputs, decoder_mask,
+                #    encoder_mask, self_attention_bias, encoder_attention_bias)
             else:
                 decoder_inputs, attention = layer(decoder_inputs, encoder_outputs, decoder_mask,
                                                   encoder_mask, self_attention_bias, encoder_attention_bias)
