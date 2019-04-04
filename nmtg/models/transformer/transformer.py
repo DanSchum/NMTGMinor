@@ -374,14 +374,15 @@ class TransformerDecoder(IncrementalDecoder):
 
         for i, layer in enumerate(self.layers):
             if self.checkpointing > 0 and self.training and (i + 1) % self.checkpointing == 0:
-                decoder_inputs, attention = layer(decoder_inputs, encoder_outputs, decoder_mask,
-                                                  encoder_mask, self_attention_bias, encoder_attention_bias)
-                #decoder_inputs, attention = torch.utils.checkpoint.checkpoint(
-                #    layer, decoder_inputs, encoder_outputs, decoder_mask,
-                #    encoder_mask, self_attention_bias, encoder_attention_bias)
+                decoder_inputs, attention = torch.utils.checkpoint.checkpoint(
+                    layer, decoder_inputs, encoder_outputs, decoder_mask,
+                    encoder_mask, self_attention_bias, encoder_attention_bias)
             else:
                 decoder_inputs, attention = layer(decoder_inputs, encoder_outputs, decoder_mask,
                                                   encoder_mask, self_attention_bias, encoder_attention_bias)
+
+        if attention.size()[0] == 1:
+            attention = None  # Bug fix for using checkpointing. Also tensor as return values allowed
 
         # From Google T2T
         # if normalization is done in layer_preprocess, then it should also be done
@@ -716,6 +717,8 @@ class TransformerDecoderLayer(IncrementalModule):
             attention_weights = None
 
         out = self.feed_forward_layer(context_attention_out, input_mask)
+        if attention_weights == None:
+            attention_weights = torch.tensor([[0]])  # Bug fix. Only tensors as return value for checkpointing allowed
         return out, attention_weights
 
     def _step(self, inputs, encoder_outputs, incremental_state, input_mask=None, context_mask=None,
